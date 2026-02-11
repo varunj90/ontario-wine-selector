@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ontario Wine Selector
 
-## Getting Started
+## Bottom line
 
-First, run the development server:
+Build a mobile-first decision engine that helps users choose an in-stock wine near them in under 90 seconds, with clear confidence and "why this pick" explanations.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## What this repo is for
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Product build for Ontario wine selection MVP.
+- UX-first execution with recommendation quality and data reliability.
+- Hands-on AI product-sense learning through a real shipped experience.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Core promise
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- User can answer: "What should I buy near me right now?" quickly and confidently.
 
-## Learn More
+## UX north-star metrics
 
-To learn more about Next.js, take a look at the following resources:
+- Median time-to-decision: <= 90 seconds.
+- Recommendation acceptance rate: >= 35% in alpha.
+- Nearby inventory validity on surfaced recommendations: >= 90%.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project structure (initial)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `docs/UX_PRINCIPLES.md`: experience quality bar and interaction standards.
+- `docs/TODAY_SPRINT.md`: parallel build streams and immediate task plan.
 
-## Deploy on Vercel
+## Quick start
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. `cd /Users/varun/Documents/ontario-wine-selector`
+2. `npm run dev`
+3. Open `http://localhost:3000`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Then continue with the UX and delivery plan in `docs/TODAY_SPRINT.md`.
