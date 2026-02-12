@@ -12,6 +12,7 @@ export type RecommendationWine = {
   price: number;
   rating: number;
   ratingCount: number;
+  hasVivinoMatch?: boolean;
   matchScore: number;
   stockConfidence: "High" | "Medium";
   why: string[];

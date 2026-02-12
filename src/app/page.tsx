@@ -20,6 +20,7 @@ type WinePick = {
   region: string;
   rating: number;
   ratingCount: number;
+  hasVivinoMatch?: boolean;
   matchScore: number;
   stockConfidence: "High" | "Medium";
   why: string[];
@@ -593,7 +594,7 @@ export default function Home() {
         <section className="space-y-3 pb-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Recommendations</h2>
-            <Badge className={shell.badge}>Sorted by Vivino</Badge>
+            <Badge className={shell.badge}>Vivino matched first</Badge>
           </div>
           {errorText ? (
             <Card className={cn("border-amber-300 bg-amber-50", isDark && "border-amber-500/40 bg-amber-500/10")}>
@@ -697,7 +698,7 @@ export default function Home() {
                     <p className={shell.secondaryText}>Vivino</p>
                     <p className="flex items-center gap-1 font-semibold">
                       <Star className="h-3 w-3" />
-                      {wine.rating.toFixed(1)}
+                      {wine.hasVivinoMatch ? wine.rating.toFixed(1) : "Search"}
                     </p>
                   </div>
                   <div className={cn("rounded-lg px-2 py-1.5", isDark ? "bg-zinc-800/70" : "bg-zinc-100")}>
@@ -708,7 +709,7 @@ export default function Home() {
                     <p className={shell.secondaryText}>Reviews</p>
                     <p className="flex items-center gap-1 font-semibold">
                       <Sparkles className="h-3 w-3" />
-                      {wine.ratingCount}
+                      {wine.hasVivinoMatch ? wine.ratingCount : "-"}
                     </p>
                   </div>
                 </div>
@@ -720,7 +721,9 @@ export default function Home() {
 
                 <div className="flex items-center gap-2">
                   <Badge className={shell.badge}>{wine.lcboLinkType === "verified_product" ? "Verified LCBO product" : "LCBO search result"}</Badge>
-                  <span className={cn("text-xs", shell.secondaryText)}>Ratings from latest ingestion source</span>
+                  <span className={cn("text-xs", shell.secondaryText)}>
+                    {wine.hasVivinoMatch ? "Vivino matched rating" : "Vivino search-only fallback"}
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between gap-3">

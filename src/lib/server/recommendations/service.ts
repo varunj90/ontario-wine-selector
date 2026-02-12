@@ -46,8 +46,7 @@ export class RecommendationService {
     }
     const hydrated = await this.signalProvider.hydrateSignals(candidates);
 
-    const qualityPool = hydrated.filter((wine) => wine.rating >= 4.0);
-    const typeVarietalCountryPool = qualityPool
+    const typeVarietalCountryPool = hydrated
       .filter((wine) => (normalizedFilters.types.length > 0 ? normalizedFilters.types.includes(wine.type) : true))
       .filter((wine) => (normalizedFilters.varietals.length > 0 ? normalizedFilters.varietals.includes(wine.varietal) : true))
       .filter((wine) => (normalizedFilters.countries.length > 0 ? normalizedFilters.countries.includes(wine.country) : true));
@@ -55,7 +54,7 @@ export class RecommendationService {
     const availableCountries = Array.from(new Set(typeVarietalCountryPool.map((wine) => wine.country))).sort((a, b) => a.localeCompare(b));
     const availableSubRegions = Array.from(new Set(typeVarietalCountryPool.map((wine) => wine.subRegion))).sort((a, b) => a.localeCompare(b));
 
-    const recommendations = typeVarietalCountryPool
+    const filteredPool = typeVarietalCountryPool
       .filter((wine) => (normalizedFilters.subRegions.length > 0 ? normalizedFilters.subRegions.includes(wine.subRegion) : true))
       .filter((wine) => (normalizedFilters.storeId ? wine.storeId === normalizedFilters.storeId : true))
       .filter((wine) => (normalizedFilters.storeId ? wine.stockConfidence === "High" : true))
@@ -64,7 +63,10 @@ export class RecommendationService {
         if (!normalizedFilters.search) return true;
         const haystack = `${wine.name} ${wine.producer} ${wine.varietal} ${wine.region}`.toLowerCase();
         return haystack.includes(normalizedFilters.search);
-      })
+      });
+
+    const matchedAndRated = filteredPool
+      .filter((wine) => (wine.hasVivinoMatch ?? false) && wine.rating >= 4.0)
       .sort((a, b) => {
         if (a.stockConfidence !== b.stockConfidence) {
           return a.stockConfidence === "High" ? -1 : 1;
@@ -73,13 +75,24 @@ export class RecommendationService {
         return b.ratingCount - a.ratingCount;
       });
 
+    const searchOnlyFallback = filteredPool
+      .filter((wine) => !(wine.hasVivinoMatch ?? false))
+      .sort((a, b) => {
+        if (a.stockConfidence !== b.stockConfidence) {
+          return a.stockConfidence === "High" ? -1 : 1;
+        }
+        return a.name.localeCompare(b.name);
+      });
+
+    const recommendations = [...matchedAndRated, ...searchOnlyFallback];
+
     return {
       query: normalizedFilters,
       availableCountries,
       availableSubRegions,
-      qualityRule: "Only wines with Vivino rating >= 4.0 are shown.",
-      rankingRule: "In-stock wines are prioritized, then results are ordered by Vivino rating (desc), then review count.",
-      reviewCountNote: "Review counts come from our latest Vivino ingestion source (API or public snapshot match).",
+      qualityRule: "Step 1: matched Vivino wines require rating >= 4.0. Step 2: unmatched wines are shown as search-only fallback.",
+      rankingRule: "Matched Vivino-rated wines are ranked first (in-stock prioritized), then search-only fallback wines.",
+      reviewCountNote: "Review counts are shown only for matched Vivino signals; fallback wines rely on direct Vivino search verification.",
       recommendations,
     };
   }

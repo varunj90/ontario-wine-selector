@@ -24,9 +24,11 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
       take: 500,
     });
 
-    return wines
-      .map((wine) => {
+    const candidates = wines.flatMap<RecommendationWine>((wine) => {
         const signal = wine.qualitySignals[0];
+        const matchedRating = signal?.rating ?? 0;
+        const matchedRatingCount = signal?.ratingCount ?? 0;
+        const signalConfidence = signal?.confidenceScore ?? 0;
         const preferredMarket = filters.storeId
           ? wine.marketData.find((entry) => {
               const code = entry.store.lcboStoreCode ?? entry.store.id;
@@ -34,9 +36,10 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
             })
           : null;
         const market = preferredMarket ?? wine.marketData[0];
-        if (!signal || !market) return null;
+        if (!market) return [];
+        const hasVivinoMatch = Boolean(signal);
 
-        return {
+        return [{
           id: wine.id,
           name: wine.name,
           producer: wine.producer,
@@ -46,22 +49,26 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
           subRegion: wine.subRegion,
           region: wine.fullRegionLabel,
           price: market.listedPriceCents / 100,
-          rating: signal.rating,
-          ratingCount: signal.ratingCount,
-          matchScore: Math.max(3.5, Math.min(5, signal.rating + signal.confidenceScore * 0.3)),
+          rating: matchedRating,
+          ratingCount: matchedRatingCount,
+          hasVivinoMatch,
+          matchScore: hasVivinoMatch ? Math.max(3.5, Math.min(5, matchedRating + signalConfidence * 0.3)) : 3.3,
           stockConfidence: market.inStock ? "High" : "Medium",
           why: [
-            `Vivino ${signal.rating.toFixed(1)} with ${signal.ratingCount} reviews`,
+            hasVivinoMatch
+              ? `Vivino ${matchedRating.toFixed(1)} with ${matchedRatingCount} reviews`
+              : "Vivino rating is not matched yet; use the Vivino search link to verify",
             market.inStock ? "Available based on latest inventory sync" : "Inventory can change quickly by store",
-            `Source refreshed ${signal.fetchedAt.toISOString().slice(0, 10)}`,
+            `Source refreshed ${(signal?.fetchedAt ?? market.sourceUpdatedAt).toISOString().slice(0, 10)}`,
           ],
           storeId: market.store.lcboStoreCode ?? market.store.id,
           storeLabel: market.store.displayName,
           lcboUrl: wine.lcboUrl ?? fallbackLcboUrl(wine.name, wine.producer),
           lcboLinkType: wine.lcboUrl && wine.lcboUrl.includes("/en/") && !wine.lcboUrl.includes("catalogsearch") ? "verified_product" : "search_fallback",
           vivinoUrl: wine.vivinoUrl ?? `https://www.vivino.com/search/wines?q=${encodeURIComponent(wine.name)}`,
-        } satisfies RecommendationWine;
-      })
-      .filter((wine): wine is RecommendationWine => wine !== null);
+        } satisfies RecommendationWine];
+      });
+
+    return candidates;
   }
 }
