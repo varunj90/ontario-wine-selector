@@ -32,3 +32,11 @@ Build a mobile-first decision engine that helps users choose an in-stock wine ne
 3. Open `http://localhost:3000`
 
 Then continue with the UX and delivery plan in `docs/TODAY_SPRINT.md`.
+
+## Beta operations
+
+- **Automated ingestion:** `vercel.json` schedules `/api/cron/sync` every 6 hours.
+- **Manual trigger:** call `GET /api/cron/sync` locally or in production.
+- **Health check:** `GET /api/ingestion/health` for freshness/dead-letter status.
+- **Security:** set `CRON_SECRET` to require `Authorization: Bearer <secret>` on cron endpoint.
+- **Alerting:** set `ALERT_WEBHOOK_URL` to receive degraded/unhealthy ingestion alerts.
