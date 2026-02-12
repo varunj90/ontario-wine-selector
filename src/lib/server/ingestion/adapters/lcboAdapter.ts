@@ -258,7 +258,8 @@ export async function fetchLcboFeedFromSource(): Promise<{ items: unknown[]; dea
       }
 
       for (const inv of inventories) {
-        const store = inv?.store;
+        if (!inv) continue;
+        const store = inv.store;
         if (!store?.externalId || !store.name) {
           deadLetters.push({
             source: "lcbo_catalog",

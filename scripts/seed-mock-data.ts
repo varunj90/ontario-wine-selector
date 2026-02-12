@@ -22,7 +22,7 @@ async function seed() {
 
     const dbWine = await prisma.wine.upsert({
       where: {
-        wine_identity_unique: {
+        name_producer_varietal_country_subRegion: {
           name: wine.name,
           producer: wine.producer,
           varietal: wine.varietal,
