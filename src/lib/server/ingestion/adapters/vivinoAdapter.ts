@@ -139,7 +139,7 @@ async function buildSignalsFromSnapshot(deadLetters: DeadLetterRecord[]) {
       producer: true,
       country: true,
     },
-    take: Number(process.env.VIVINO_SYNC_MAX_WINES ?? "1500"),
+    take: Number(process.env.VIVINO_SYNC_MAX_WINES ?? "5000"),
   });
 
   const signals: unknown[] = [];
