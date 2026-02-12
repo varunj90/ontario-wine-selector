@@ -60,7 +60,7 @@ async function currentHealthStatus(): Promise<HealthStatus> {
     }),
   ]);
 
-  const failingRuns = latestRuns.filter((run) => run.status === "failed").length;
+  const failingRuns = latestRuns.filter((run: { status: string }) => run.status === "failed").length;
   const nowMs = Date.now();
   const lcboStaleMinutes = latestLcboSuccess?.completedAt ? Math.round((nowMs - latestLcboSuccess.completedAt.getTime()) / 60000) : null;
   const vivinoStaleMinutes = latestVivinoSuccess?.completedAt ? Math.round((nowMs - latestVivinoSuccess.completedAt.getTime()) / 60000) : null;

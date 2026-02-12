@@ -4,12 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 
 const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not configured.");
-}
-
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
+const adapter = connectionString ? new PrismaPg(new Pool({ connectionString })) : undefined;
 
 declare global {
   var prismaGlobal: PrismaClient | undefined;
@@ -18,9 +13,13 @@ declare global {
 export const prisma =
   global.prismaGlobal ??
   new PrismaClient({
-    adapter,
+    ...(adapter ? { adapter } : {}),
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
+
+if (!connectionString) {
+  console.warn("DATABASE_URL is not configured. Database-backed API routes will fail until it is set.");
+}
 
 if (process.env.NODE_ENV !== "production") {
   global.prismaGlobal = prisma;
