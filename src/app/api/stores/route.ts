@@ -103,7 +103,7 @@ export async function GET(request: Request) {
   });
 
   const rankedStores = stores
-    .map((store) => {
+    .map((store: { id: string; lcboStoreCode: string | null; displayName: string; city: string | null; latitude: number | null; longitude: number | null }) => {
       const distance = distanceKm(geocode.latitude, geocode.longitude, store.latitude ?? 0, store.longitude ?? 0);
       return {
         id: store.lcboStoreCode ?? store.id,
