@@ -9,6 +9,22 @@ type GeocodeResult = {
   state: string;
 };
 
+type StoreRow = {
+  id: string;
+  lcboStoreCode: string | null;
+  displayName: string;
+  city: string | null;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+type RankedStore = {
+  id: string;
+  label: string;
+  city: string | null;
+  distanceKm: number;
+};
+
 function normalizePostalCode(input: string) {
   return input.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3);
 }
@@ -103,7 +119,7 @@ export async function GET(request: Request) {
   });
 
   const rankedStores = stores
-    .map((store: { id: string; lcboStoreCode: string | null; displayName: string; city: string | null; latitude: number | null; longitude: number | null }) => {
+    .map((store: StoreRow): RankedStore => {
       const distance = distanceKm(geocode.latitude, geocode.longitude, store.latitude ?? 0, store.longitude ?? 0);
       return {
         id: store.lcboStoreCode ?? store.id,
@@ -112,7 +128,7 @@ export async function GET(request: Request) {
         distanceKm: Number(distance.toFixed(1)),
       };
     })
-    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .sort((a: RankedStore, b: RankedStore) => a.distanceKm - b.distanceKm)
     .slice(0, limit);
 
   return NextResponse.json({

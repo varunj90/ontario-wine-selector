@@ -4,17 +4,29 @@ import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 
 const connectionString = process.env.DATABASE_URL;
-const adapter = connectionString ? new PrismaPg(new Pool({ connectionString })) : undefined;
 
 declare global {
-  var prismaGlobal: PrismaClient | undefined;
+  var prismaGlobal: PrismaClient | null | undefined;
 }
 
-export const prisma =
-  global.prismaGlobal ??
-  new PrismaClient({
-    ...(adapter ? { adapter } : {}),
+function createPrismaClient() {
+  if (!connectionString) return null;
+
+  const adapter = new PrismaPg(new Pool({ connectionString }));
+  return new PrismaClient({
+    adapter,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+  });
+}
+
+const prismaInstance = global.prismaGlobal ?? createPrismaClient();
+
+export const prisma: PrismaClient =
+  prismaInstance ??
+  new Proxy({} as PrismaClient, {
+    get() {
+      throw new Error("DATABASE_URL is not configured. Database-backed API routes are unavailable.");
+    },
   });
 
 if (!connectionString) {
@@ -22,5 +34,5 @@ if (!connectionString) {
 }
 
 if (process.env.NODE_ENV !== "production") {
-  global.prismaGlobal = prisma;
+  global.prismaGlobal = prismaInstance;
 }
