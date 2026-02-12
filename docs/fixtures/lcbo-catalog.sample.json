@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "externalId": "304469",
+      "name": "Cloudy Bay Sauvignon Blanc",
+      "producer": "Cloudy Bay",
+      "type": "White",
+      "varietal": "Sauvignon Blanc",
+      "country": "New Zealand",
+      "subRegion": "Marlborough",
+      "regionLabel": "Marlborough, New Zealand",
+      "lcboUrl": "https://www.lcbo.com/en/cloudy-bay-sauvignon-blanc-304469",
+      "vivinoUrl": "https://www.vivino.com/search/wines?q=cloudy%20bay%20sauvignon%20blanc",
+      "storeCode": "king-west",
+      "storeLabel": "LCBO - King St",
+      "listedPriceCents": 4295,
+      "inventoryQuantity": 24,
+      "inStock": true,
+      "sourceUpdatedAt": "2026-02-12T16:00:00.000Z"
+    }
+  ]
+}
