@@ -12,6 +12,7 @@ import {
   FavoritesPanel,
   FilterPanel,
   RecommendationList,
+  SearchInput,
   SelectedStoreInfo,
   StoreFallbackNote,
   StoreSelector,
@@ -33,7 +34,7 @@ function WineSelectorApp() {
   const shell = isDark ? darkTheme : lightTheme;
 
   // Filter state
-  const searchTerm = ""; // search UI removed for now
+  const [searchTerm, setSearchTerm] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<WineType[]>([]);
   const [selectedVarietals, setSelectedVarietals] = useState<string[]>([]);
@@ -184,6 +185,8 @@ function WineSelectorApp() {
           </CardHeader>
 
           <CardContent className="space-y-4 p-6 pt-1">
+            <SearchInput value={searchTerm} onChange={setSearchTerm} shell={shell} isDark={isDark} />
+
             <StoreSelector
               postalCode={postalCode}
               onPostalCodeChange={setPostalCode}

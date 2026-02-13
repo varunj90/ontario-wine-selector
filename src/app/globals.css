@@ -206,7 +206,3 @@ html {
   animation: float-bubble 3.5s ease-in-out infinite;
 }
 
-/* ─── Serif display font ─── */
-.font-serif-display {
-  font-family: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
-}

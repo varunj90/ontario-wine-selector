@@ -99,11 +99,11 @@ Inspired by Josh Puckett's "Interface Craft" philosophy: _design with uncommon c
 | **BottomBar** | Morphing pill (empty → selected), glass blur, spring animation between states |
 | **PriceRangeSlider** | Borderless (seamless), accent-colored active track, custom thumb with hover/grab states |
 | **StoreSelector** | Two-column grid (postal code + dropdown), 44px height inputs |
-| **SearchInput** | Removed from UI in current version (functionality incomplete) |
+| **SearchInput** | As-you-type search by wine name, producer, or grape. 14px body font, 48px height, rounded-2xl |
 
 ### What we intentionally avoided
 
-- Serif fonts (tried Instrument Serif — created inconsistency, removed)
+- Serif fonts (tried Instrument Serif — created inconsistency, fully removed including font load)
 - Heavy borders on containers (dated feel)
 - Cold gray palette (zinc, slate)
 - Overly thick font weights on small text
