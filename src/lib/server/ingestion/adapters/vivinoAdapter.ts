@@ -137,6 +137,12 @@ async function loadVivinoSnapshotRows(deadLetters: DeadLetterRecord[]): Promise<
   return allRows;
 }
 
+/**
+ * Minimum match score when producer is unknown and we can't validate the match
+ * via producer/brand overlap. Higher threshold to reduce false positives.
+ */
+const UNKNOWN_PRODUCER_MIN_SCORE = Number(process.env.VIVINO_UNKNOWN_PRODUCER_MIN_SCORE ?? "0.62");
+
 async function buildSignalsFromSnapshot(deadLetters: DeadLetterRecord[]) {
   const snapshotRows = await loadVivinoSnapshotRows(deadLetters);
   const wines = await prisma.wine.findMany({
@@ -156,7 +162,14 @@ async function buildSignalsFromSnapshot(deadLetters: DeadLetterRecord[]) {
   for (const wine of wines) {
     if (!wine.lcboProductId) continue;
 
-    const target = `${wine.producer} ${wine.name}`;
+    const isUnknownProducer = wine.producer === "Unknown Producer";
+
+    // When producer is unknown, exclude it from the target to avoid noise
+    // from "unknown" and "producer" tokens inflating/deflating Jaccard scores.
+    const target = isUnknownProducer
+      ? wine.name
+      : `${wine.producer} ${wine.name}`;
+
     let best: SnapshotRow | null = null;
     let bestScore = 0;
     for (const row of snapshotRows) {
@@ -174,11 +187,21 @@ async function buildSignalsFromSnapshot(deadLetters: DeadLetterRecord[]) {
     if (!best) {
       continue;
     }
-    if (!hasProducerTokenOverlap(wine.producer, best.brand)) {
-      continue;
-    }
-    if (bestScore < SNAPSHOT_MIN_MATCH_SCORE) {
-      continue;
+
+    // When we have real producer data, require token overlap with the CSV brand
+    // to avoid matching the wrong producer's wine with the same name.
+    // When producer is unknown, skip this gate but require a higher name score.
+    if (!isUnknownProducer) {
+      if (!hasProducerTokenOverlap(wine.producer, best.brand)) {
+        continue;
+      }
+      if (bestScore < SNAPSHOT_MIN_MATCH_SCORE) {
+        continue;
+      }
+    } else {
+      if (bestScore < UNKNOWN_PRODUCER_MIN_SCORE) {
+        continue;
+      }
     }
 
     signals.push({

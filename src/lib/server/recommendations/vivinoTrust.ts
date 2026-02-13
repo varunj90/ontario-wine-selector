@@ -1,5 +1,12 @@
 export function buildVivinoSearchUrl(wineName: string, producer: string, country?: string | null): string {
-  const query = [producer, wineName, country].filter(Boolean).join(" ");
+  // Avoid duplicating the producer when it's already in the wine name
+  // (e.g., producer "Cloudy Bay" + name "Cloudy Bay Sauvignon Blanc" → search "Cloudy Bay Sauvignon Blanc")
+  const nameAlreadyIncludesProducer =
+    producer && wineName.toLowerCase().includes(producer.toLowerCase());
+  const parts = nameAlreadyIncludesProducer
+    ? [wineName, country]
+    : [producer, wineName, country];
+  const query = parts.filter(Boolean).join(" ");
   return `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`;
 }
 

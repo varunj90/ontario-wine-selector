@@ -1,5 +1,6 @@
 import { fetchJsonWithRetry } from "../httpClient";
 import { extractVarietal } from "../extractVarietal";
+import { extractProducer } from "../extractProducer";
 import type { DeadLetterRecord } from "../validation";
 import { buildVivinoSearchUrl } from "@/lib/server/recommendations/vivinoTrust";
 
@@ -14,6 +15,7 @@ type LcboGraphQLResponse = {
         node?: {
           sku?: string;
           name?: string;
+          externalId?: string | null;
           producerName?: string | null;
           primaryCategory?: string | null;
           shortDescription?: string | null;
@@ -77,7 +79,22 @@ function inferWineType(primaryCategory?: string | null): CatalogItem["type"] {
 }
 
 
-function toLcboUrl(name: string, sku: string): string {
+/**
+ * Extracts the real LCBO product URL from the `externalId` field.
+ *
+ * The LCBO API `externalId` format is:
+ *   `42.6601$https://www.lcbo.com/en/<real-slug>-<sku>`
+ *
+ * The slug in `externalId` is the Magento-managed URL key and often differs
+ * from a naive slugification of the product name (~75% mismatch rate).
+ * When `externalId` is not available, falls back to slug generation.
+ */
+function toLcboUrl(productExternalId: string | null | undefined, name: string, sku: string): string {
+  if (productExternalId) {
+    const match = productExternalId.match(/\$(https:\/\/www\.lcbo\.com\/[^\s]+)/);
+    if (match) return match[1];
+  }
+  // Fallback: generate slug from name (unreliable ~25% accuracy)
   const slug = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -108,6 +125,7 @@ async function fetchProductsPage(
           node {
             sku
             name
+            externalId
             producerName
             primaryCategory
             shortDescription
@@ -152,6 +170,7 @@ async function fetchProductsPage(
           node {
             sku
             name
+            externalId
             producerName
             primaryCategory
             shortDescription
@@ -249,17 +268,20 @@ export async function fetchLcboFeedFromSource(): Promise<{ items: unknown[]; dea
         const subRegion = node.regionName?.trim() || "Unspecified";
         const country = node.countryOfManufacture?.trim() || "Unknown";
         const type = inferWineType(node.primaryCategory);
+        const wineName = node.name.trim();
+        const varietal = extractVarietal(wineName, node.shortDescription);
+        const producer = node.producerName?.trim() || extractProducer(wineName, varietal);
         items.push({
           externalId: node.sku,
-          name: node.name.trim(),
-          producer: node.producerName?.trim() || "Unknown Producer",
+          name: wineName,
+          producer,
           type,
-          varietal: extractVarietal(node.name.trim(), node.shortDescription),
+          varietal,
           country,
           subRegion,
           regionLabel: `${country} - ${subRegion}`,
-          lcboUrl: toLcboUrl(node.name, node.sku),
-          vivinoUrl: buildVivinoSearchUrl(node.name, node.producerName?.trim() || "Unknown Producer", country),
+          lcboUrl: toLcboUrl(node.externalId, node.name, node.sku),
+          vivinoUrl: buildVivinoSearchUrl(wineName, producer !== "Unknown Producer" ? producer : "", country),
           storeCode: CATALOG_ONLY_STORE_CODE,
           storeLabel: CATALOG_ONLY_STORE_LABEL,
           listedPriceCents: Math.round(node.priceInCents),
@@ -269,6 +291,15 @@ export async function fetchLcboFeedFromSource(): Promise<{ items: unknown[]; dea
         });
         continue;
       }
+
+      const subRegion = node.regionName?.trim() || "Unspecified";
+      const country = node.countryOfManufacture?.trim() || "Unknown";
+      const type = inferWineType(node.primaryCategory);
+      const wineName = node.name.trim();
+      const varietal = extractVarietal(wineName, node.shortDescription);
+      const producer = node.producerName?.trim() || extractProducer(wineName, varietal);
+      const lcboUrl = toLcboUrl(node.externalId, node.name, node.sku);
+      const vivinoUrl = buildVivinoSearchUrl(wineName, producer !== "Unknown Producer" ? producer : "", country);
 
       for (const inv of inventories) {
         if (!inv) continue;
@@ -285,20 +316,17 @@ export async function fetchLcboFeedFromSource(): Promise<{ items: unknown[]; dea
         }
 
         const quantity = Math.max(0, Number(inv.quantity ?? 0));
-        const subRegion = node.regionName?.trim() || "Unspecified";
-        const country = node.countryOfManufacture?.trim() || "Unknown";
-        const type = inferWineType(node.primaryCategory);
         items.push({
           externalId: node.sku,
-          name: node.name.trim(),
-          producer: node.producerName?.trim() || "Unknown Producer",
+          name: wineName,
+          producer,
           type,
-          varietal: extractVarietal(node.name.trim(), node.shortDescription),
+          varietal,
           country,
           subRegion,
           regionLabel: `${country} - ${subRegion}`,
-          lcboUrl: toLcboUrl(node.name, node.sku),
-          vivinoUrl: buildVivinoSearchUrl(node.name, node.producerName?.trim() || "Unknown Producer", country),
+          lcboUrl,
+          vivinoUrl,
           storeCode: store.externalId,
           storeLabel: [store.name, store.city].filter(Boolean).join(" - "),
           storeCity: store.city ?? undefined,

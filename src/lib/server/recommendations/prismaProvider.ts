@@ -5,7 +5,7 @@ import type { WineCatalogProvider } from "./providers";
 import type { RecommendationFilterInput, RecommendationWine } from "./types";
 import { isTrustedVivinoSignal, resolveVivinoUrl } from "./vivinoTrust";
 
-const MIN_TRUSTED_VIVINO_CONFIDENCE = Number(process.env.VIVINO_MIN_CONFIDENCE ?? "0.72");
+const MIN_TRUSTED_VIVINO_CONFIDENCE = Number(process.env.VIVINO_MIN_CONFIDENCE ?? "0.65");
 
 function fallbackLcboUrl(wineName: string, producer: string) {
   return `https://www.lcbo.com/en/catalogsearch/result/?q=${encodeURIComponent(`"${wineName} ${producer}"`)}`;
@@ -118,7 +118,12 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
           storeLabel,
           lcboUrl: wine.lcboUrl ?? fallbackLcboUrl(wine.name, wine.producer),
           lcboLinkType: wine.lcboUrl && wine.lcboUrl.includes("/en/") && !wine.lcboUrl.includes("catalogsearch") ? "verified_product" : "search_fallback",
-          vivinoUrl: resolveVivinoUrl(wine.vivinoUrl, wine.name, wine.producer, wine.country),
+          vivinoUrl: resolveVivinoUrl(
+            wine.vivinoUrl,
+            wine.name,
+            wine.producer === "Unknown Producer" ? "" : wine.producer,
+            wine.country,
+          ),
         } satisfies RecommendationWine];
       });
 

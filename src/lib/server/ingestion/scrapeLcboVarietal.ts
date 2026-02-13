@@ -153,8 +153,13 @@ export async function scrapeLcboVarietal(lcboUrl: string): Promise<string | null
 
 /**
  * Constructs the canonical LCBO product page URL for a given product.
+ * Prefers the real URL from `externalId` when available.
  */
-export function buildLcboProductUrl(name: string, sku: string): string {
+export function buildLcboProductUrl(name: string, sku: string, externalId?: string | null): string {
+  if (externalId) {
+    const match = externalId.match(/\$(https:\/\/www\.lcbo\.com\/[^\s]+)/);
+    if (match) return match[1];
+  }
   const slug = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
