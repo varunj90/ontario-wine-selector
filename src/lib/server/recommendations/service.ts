@@ -48,7 +48,16 @@ export class RecommendationService {
 
     const typeVarietalCountryPool = hydrated
       .filter((wine) => (normalizedFilters.types.length > 0 ? normalizedFilters.types.includes(wine.type) : true))
-      .filter((wine) => (normalizedFilters.varietals.length > 0 ? normalizedFilters.varietals.includes(wine.varietal) : true))
+      .filter((wine) => {
+        if (normalizedFilters.varietals.length === 0) return true;
+        // Primary: exact match on the clean varietal value (post-extraction).
+        if (normalizedFilters.varietals.includes(wine.varietal)) return true;
+        // Belt-and-suspenders: also check if the wine's name or varietal field
+        // contains any of the requested varietals (handles legacy data where
+        // the varietal field still holds a description string).
+        const hay = `${wine.varietal} ${wine.name}`.toLowerCase();
+        return normalizedFilters.varietals.some((v) => hay.includes(v.toLowerCase()));
+      })
       .filter((wine) => (normalizedFilters.countries.length > 0 ? normalizedFilters.countries.includes(wine.country) : true));
 
     const availableCountries = Array.from(new Set(typeVarietalCountryPool.map((wine) => wine.country))).sort((a, b) => a.localeCompare(b));

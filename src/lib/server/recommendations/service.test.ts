@@ -105,6 +105,76 @@ test("recommendation ranking prioritizes trusted Vivino matches and keeps search
   );
 });
 
+test("varietal filter matches wines with exact varietal value", async () => {
+  const wines: RecommendationWine[] = [
+    makeWine({ id: "chard-exact", name: "Gato Negro Chardonnay", varietal: "Chardonnay" }),
+    makeWine({ id: "merlot", name: "Sample Merlot", varietal: "Merlot" }),
+  ];
+
+  const service = new RecommendationService(
+    new StaticCatalogProvider(wines),
+    new PassThroughSignalProvider(),
+  );
+
+  const result = await service.recommend(baseFilters({ varietals: ["Chardonnay"] }));
+  assert.equal(result.recommendations.length, 1);
+  assert.equal(result.recommendations[0]?.id, "chard-exact");
+});
+
+test("varietal filter falls back to name-based matching for legacy data", async () => {
+  // Simulates a wine whose varietal field still contains description text
+  // (legacy data that hasn't been backfilled), but whose name contains the grape.
+  const wines: RecommendationWine[] = [
+    makeWine({
+      id: "chard-legacy",
+      name: "Lindemans Bin 65 Chardonnay",
+      varietal: "Well-priced and delicious chardonnay from Chile",
+    }),
+    makeWine({
+      id: "merlot",
+      name: "Sample Merlot",
+      varietal: "A smooth and velvety red wine",
+    }),
+  ];
+
+  const service = new RecommendationService(
+    new StaticCatalogProvider(wines),
+    new PassThroughSignalProvider(),
+  );
+
+  const result = await service.recommend(baseFilters({ varietals: ["Chardonnay"] }));
+  // Should find both: one via varietal description containing "chardonnay",
+  // the other via name containing "Chardonnay"
+  assert.equal(result.recommendations.length, 1);
+  assert.equal(result.recommendations[0]?.id, "chard-legacy");
+});
+
+test("varietal filter matches grape in description-varietal even if not in name", async () => {
+  // Wine name is "Louis Jadot Chablis" — no grape in name
+  // But the varietal field (legacy) might contain "chardonnay" in the description
+  const wines: RecommendationWine[] = [
+    makeWine({
+      id: "chablis",
+      name: "Louis Jadot Chablis",
+      varietal: "A classic Chardonnay from Burgundy",
+    }),
+    makeWine({
+      id: "other",
+      name: "Random Wine",
+      varietal: "Something else",
+    }),
+  ];
+
+  const service = new RecommendationService(
+    new StaticCatalogProvider(wines),
+    new PassThroughSignalProvider(),
+  );
+
+  const result = await service.recommend(baseFilters({ varietals: ["Chardonnay"] }));
+  assert.equal(result.recommendations.length, 1);
+  assert.equal(result.recommendations[0]?.id, "chablis");
+});
+
 test("store fallback activates when selected store has no in-stock candidates", async () => {
   const wines: RecommendationWine[] = [
     makeWine({

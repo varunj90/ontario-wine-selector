@@ -15,7 +15,19 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
   async listCandidates(filters: RecommendationFilterInput): Promise<RecommendationWine[]> {
     const liveStoreInventory = filters.storeId ? await getLiveStoreInventory(filters.storeId) : null;
 
+    // Push type/country filters to the DB so we only materialise the slice
+    // the service layer actually needs. Varietal is intentionally NOT filtered
+    // at the DB level because the service layer applies a fuzzy "belt-and-
+    // suspenders" match that also checks the wine name — pushing an exact-match
+    // WHERE here would silently drop wines whose name contains the grape but
+    // whose varietal field still has legacy description text.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: Record<string, any> = {};
+    if (filters.types.length > 0) where.type = { in: filters.types };
+    if (filters.countries.length > 0) where.country = { in: filters.countries };
+
     const wines = await prisma.wine.findMany({
+      where,
       include: {
         qualitySignals: {
           where: { source: "vivino" },
@@ -27,7 +39,6 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
           orderBy: [{ sourceUpdatedAt: "desc" }],
         },
       },
-      take: 2500,
     });
 
     const candidates = wines.flatMap<RecommendationWine>((wine) => {

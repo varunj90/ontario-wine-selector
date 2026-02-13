@@ -1,4 +1,5 @@
 import { fetchJsonWithRetry } from "../httpClient";
+import { extractVarietal } from "../extractVarietal";
 import type { DeadLetterRecord } from "../validation";
 import { buildVivinoSearchUrl } from "@/lib/server/recommendations/vivinoTrust";
 
@@ -75,11 +76,6 @@ function inferWineType(primaryCategory?: string | null): CatalogItem["type"] {
   return "Other";
 }
 
-function inferVarietal(shortDescription?: string | null): string {
-  if (!shortDescription) return "Blend";
-  const sentence = shortDescription.split(".")[0]?.trim();
-  return sentence && sentence.length > 2 ? sentence.slice(0, 64) : "Blend";
-}
 
 function toLcboUrl(name: string, sku: string): string {
   const slug = name
@@ -258,7 +254,7 @@ export async function fetchLcboFeedFromSource(): Promise<{ items: unknown[]; dea
           name: node.name.trim(),
           producer: node.producerName?.trim() || "Unknown Producer",
           type,
-          varietal: inferVarietal(node.shortDescription),
+          varietal: extractVarietal(node.name.trim(), node.shortDescription),
           country,
           subRegion,
           regionLabel: `${country} - ${subRegion}`,
@@ -297,7 +293,7 @@ export async function fetchLcboFeedFromSource(): Promise<{ items: unknown[]; dea
           name: node.name.trim(),
           producer: node.producerName?.trim() || "Unknown Producer",
           type,
-          varietal: inferVarietal(node.shortDescription),
+          varietal: extractVarietal(node.name.trim(), node.shortDescription),
           country,
           subRegion,
           regionLabel: `${country} - ${subRegion}`,
