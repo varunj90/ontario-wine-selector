@@ -63,9 +63,11 @@ export class RecommendationService {
         return haystack.includes(normalizedFilters.search);
       });
 
+    const minRating = normalizedFilters.minRating ?? 4.0;
+
     const rankTwoStep = (pool: RecommendationWine[]) => {
       const matchedAndRated = pool
-        .filter((wine) => (wine.hasVivinoMatch ?? false) && wine.rating >= 4.0)
+        .filter((wine) => (wine.hasVivinoMatch ?? false) && wine.rating >= minRating)
         .sort((a, b) => {
           if (a.stockConfidence !== b.stockConfidence) {
             return a.stockConfidence === "High" ? -1 : 1;

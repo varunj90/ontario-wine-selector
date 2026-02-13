@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/server/db";
-import { Prisma } from "@prisma/client";
 
 import { persistDeadLetters } from "./deadLetterStore";
 import { validateCatalogFeedItems } from "./validation";

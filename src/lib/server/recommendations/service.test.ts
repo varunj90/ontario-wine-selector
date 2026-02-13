@@ -28,6 +28,7 @@ function baseFilters(overrides?: Partial<RecommendationFilterInput>): Recommenda
     subRegions: [],
     minPrice: 10,
     maxPrice: 100,
+    minRating: 4.0,
     storeId: "",
     ...overrides,
   };

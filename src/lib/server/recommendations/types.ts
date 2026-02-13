@@ -32,6 +32,7 @@ export type RecommendationFilterInput = {
   subRegions: string[];
   minPrice: number;
   maxPrice: number;
+  minRating: number;
   storeId: string;
 };
 

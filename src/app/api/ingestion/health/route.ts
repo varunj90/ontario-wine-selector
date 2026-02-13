@@ -1,26 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/server/db";
-
-type HealthStatus = "healthy" | "degraded" | "unhealthy";
-
-function envNumber(name: string, fallback: number) {
-  const value = Number(process.env[name] ?? "");
-  return Number.isFinite(value) && value > 0 ? value : fallback;
-}
-
-function computeSourceStatus(staleMinutes: number, staleThresholdMinutes: number, failedRuns: number): HealthStatus {
-  if (failedRuns > 0) return "degraded";
-  if (staleMinutes > staleThresholdMinutes * 2) return "unhealthy";
-  if (staleMinutes > staleThresholdMinutes) return "degraded";
-  return "healthy";
-}
-
-function aggregateStatus(statuses: HealthStatus[]): HealthStatus {
-  if (statuses.includes("unhealthy")) return "unhealthy";
-  if (statuses.includes("degraded")) return "degraded";
-  return "healthy";
-}
+import { aggregateStatus, computeSourceStatus, envNumber, type HealthStatus } from "@/lib/server/ingestion/healthStatus";
 
 export async function GET() {
   const STALE_LCBO_MINUTES = envNumber("INGESTION_LCBO_STALE_MINUTES", 24 * 60);
