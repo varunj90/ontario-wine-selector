@@ -25,6 +25,21 @@ Build a mobile-first decision engine that helps users choose an in-stock wine ne
 - `docs/UX_PRINCIPLES.md`: experience quality bar and interaction standards.
 - `docs/TODAY_SPRINT.md`: parallel build streams and immediate task plan.
 
+## Documentation index (agent handoff)
+
+- `docs/PRODUCT_REQUIREMENTS.md`
+  - Current functional scope, UX requirements, explicit product decisions, non-goals.
+- `docs/TECHNICAL_DECISIONS.md`
+  - Architecture, ingestion strategy, reliability policy, deployment requirements, decision log.
+- `docs/RESILIENCE_POLICY.md`
+  - Health thresholds, failure behavior, runbook-level resilience expectations.
+- `docs/UPSTREAM_CONTRACTS.md`
+  - Source contract expectations and validation boundaries.
+- `docs/UX_PRINCIPLES.md`
+  - Experience quality standards and release-gate framing.
+- `docs/TODAY_SPRINT.md`
+  - Historical sprint planning context (not the current source-of-truth for scope).
+
 ## Quick start
 
 1. `cd /Users/varun/Documents/ontario-wine-selector`
