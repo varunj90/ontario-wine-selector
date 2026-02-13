@@ -20,5 +20,5 @@ export { useStoreLookup } from "./hooks/useStoreLookup";
 export { useTheme } from "./hooks/useTheme";
 
 export { trackEvent } from "./analytics";
-export { darkTheme, lightTheme } from "./theme";
-export type { AlternativeStoreOption, ShellTheme, StoreOption, WinePick, WineType } from "./types";
+export { darkTheme, lightTheme, defaultAccent, getAccentForTypes } from "./theme";
+export type { AccentTheme, AlternativeStoreOption, ShellTheme, StoreOption, WinePick, WineType } from "./types";

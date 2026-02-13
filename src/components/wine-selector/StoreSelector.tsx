@@ -24,23 +24,30 @@ export function StoreSelector({
   stores,
   loading,
   error,
-  shell,
   isDark,
 }: StoreSelectorProps) {
+  const inputClass = cn(
+    "h-[44px] rounded-2xl border px-4 text-[14px] outline-none transition-all duration-200",
+    "focus:ring-2",
+    isDark
+      ? "border-stone-600/50 bg-stone-800/50 text-stone-100 placeholder:text-stone-500 focus:border-stone-500 focus:ring-stone-500/10"
+      : "border-stone-300 bg-white text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:ring-stone-400/10",
+  );
+
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <div className="space-y-1.5">
+      <div className="grid grid-cols-2 gap-2">
         <input
           value={postalCode}
           onChange={(e) => onPostalCodeChange(e.target.value.toUpperCase())}
           maxLength={3}
-          placeholder="Area code (e.g., M5V)"
-          className={cn("rounded-xl border px-3 py-2.5 text-sm outline-none transition-all", shell.input)}
+          placeholder="Area code"
+          className={inputClass}
         />
         <select
           value={selectedStoreId}
           onChange={(e) => onStoreChange(e.target.value)}
-          className={cn("w-full min-w-0 rounded-xl border px-3 py-2.5 text-sm outline-none transition-all", shell.input)}
+          className={cn(inputClass, "w-full min-w-0")}
         >
           <option value="">Any LCBO</option>
           {stores.map((store) => (
@@ -50,9 +57,11 @@ export function StoreSelector({
           ))}
         </select>
       </div>
-      <p className={cn("text-xs", shell.secondaryText)}>Store filter is optional. Leave as &quot;Any LCBO&quot; for wider results.</p>
-      {loading ? <p className={cn("text-xs", shell.secondaryText)}>Looking up nearby LCBO stores...</p> : null}
-      {error ? <p className={cn("text-xs", isDark ? "text-amber-300" : "text-amber-700")}>{error}</p> : null}
+      <p className={cn("text-[11px]", isDark ? "text-stone-600" : "text-stone-400")}>
+        Optional — leave blank for wider results.
+      </p>
+      {loading ? <p className={cn("text-[11px]", isDark ? "text-stone-500" : "text-stone-400")}>Looking up nearby stores…</p> : null}
+      {error ? <p className={cn("text-[11px]", isDark ? "text-amber-400" : "text-amber-700")}>{error}</p> : null}
     </div>
   );
 }

@@ -1,10 +1,19 @@
 @import "tailwindcss";
 
+/* ─── Warm palette ─── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf8f5;
+  --foreground: #1c1917;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0c0a09;
+    --foreground: #f5f0eb;
+  }
+}
+
+/* ─── Tailwind theme ─── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -12,51 +21,143 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ─── Base ─── */
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Force all form elements to inherit the body font (no font-size — let Tailwind utilities control size) */
+@layer base {
+  input, select, textarea, button {
+    font-family: inherit;
+  }
+}
+
+/* Subtle noise texture — low z-index so it doesn't block clicks */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.020;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: rgba(217, 119, 6, 0.25);
+  color: inherit;
+}
+
+/* ─── Smooth scroll ─── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ─── Custom scrollbar ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(168, 162, 158, 0.3); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(168, 162, 158, 0.5); }
+
+/* ─── Easing ─── */
+:root {
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Keyframes ─── */
 @keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes scale-in {
+  from { transform: scale(0.92); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.7; }
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
+@keyframes float-bubble {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.2; }
+  50%      { transform: translateY(-8px) scale(1.15); opacity: 0.4; }
+}
+
+/* ─── Animation utilities ─── */
 .animate-fade-up {
-  animation: fade-up 280ms ease-out both;
+  animation: fade-up 450ms var(--ease-out-expo) both;
+}
+
+.animate-scale-in {
+  animation: scale-in 300ms var(--spring) both;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
 }
 
 .shimmer {
-  background: linear-gradient(100deg, rgba(120, 120, 120, 0.1) 30%, rgba(220, 220, 220, 0.22) 50%, rgba(120, 120, 120, 0.1) 70%);
+  background: linear-gradient(100deg, rgba(168,162,158,0.06) 30%, rgba(214,211,209,0.15) 50%, rgba(168,162,158,0.06) 70%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite linear;
 }
 
+/* ─── Expand / collapse ─── */
+.expand-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 400ms var(--ease-out-expo), opacity 300ms ease;
+}
+.expand-collapse[data-expanded="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.expand-collapse > div {
+  overflow: hidden;
+}
+
+/* ─── Glass card base ─── */
+.glass-card {
+  border-radius: 24px;
+  border: 1px solid;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    0 24px 48px rgba(0, 0, 0, 0.08);
+}
+
+/* Light mode glass card */
+.glass-card-light {
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.8),
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.06),
+    0 24px 48px rgba(0, 0, 0, 0.04);
+}
+
+/* ─── Price range slider ─── */
 .price-range {
   -webkit-appearance: none;
   appearance: none;
@@ -65,36 +166,47 @@ body {
   background: transparent;
   pointer-events: none;
 }
-
-.price-range::-webkit-slider-runnable-track {
-  height: 4px;
-  background: transparent;
-}
-
-.price-range::-moz-range-track {
-  height: 4px;
-  background: transparent;
-}
-
+.price-range::-webkit-slider-runnable-track { height: 4px; background: transparent; }
+.price-range::-moz-range-track { height: 4px; background: transparent; }
 .price-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 9999px;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  margin-top: -7px;
+  background: #fff;
+  border: 2px solid rgba(0,0,0,0.06);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.1);
+  margin-top: -9px;
   pointer-events: auto;
+  cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.price-range::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2), 0 6px 16px rgba(0,0,0,0.12);
+}
+.price-range::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.05); }
+.price-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid rgba(0,0,0,0.06);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.1);
+  pointer-events: auto;
+  cursor: grab;
 }
 
-.price-range::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+/* ─── Bubbly decoration ─── */
+.bubble-dot {
+  position: absolute;
   border-radius: 9999px;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  pointer-events: auto;
+  pointer-events: none;
+  animation: float-bubble 3.5s ease-in-out infinite;
+}
+
+/* ─── Serif display font ─── */
+.font-serif-display {
+  font-family: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type StoreFallbackNoteProps = {
@@ -10,8 +10,16 @@ type StoreFallbackNoteProps = {
 
 export function StoreFallbackNote({ note, isDark }: StoreFallbackNoteProps) {
   return (
-    <Card className={cn("border-amber-300 bg-amber-50", isDark && "border-amber-500/40 bg-amber-500/10")}>
-      <CardContent className={cn("pt-4 text-sm", isDark ? "text-amber-200" : "text-amber-700")}>{note}</CardContent>
-    </Card>
+    <div
+      className={cn(
+        "animate-fade-up flex items-start gap-3 rounded-2xl border px-5 py-4 text-[13px]",
+        isDark
+          ? "border-amber-500/15 bg-amber-500/5 text-amber-200/80"
+          : "border-amber-200 bg-amber-50 text-amber-700",
+      )}
+    >
+      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+      <span className="leading-relaxed">{note}</span>
+    </div>
   );
 }

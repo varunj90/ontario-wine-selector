@@ -5,17 +5,14 @@ import { cn } from "@/lib/utils";
 function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn(
-        "rounded-2xl border border-zinc-800/80 bg-zinc-900/75 shadow-[0_16px_30px_rgba(0,0,0,0.25)] backdrop-blur",
-        className,
-      )}
+      className={cn("glass-card", className)}
       {...props}
     />
   );
 }
 
 function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex flex-col gap-1.5 p-4", className)} {...props} />;
+  return <div className={cn("flex flex-col gap-1.5 p-5 pb-2", className)} {...props} />;
 }
 
 function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
@@ -23,7 +20,7 @@ function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElem
 }
 
 function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-4 pt-0", className)} {...props} />;
+  return <div className={cn("p-5 pt-0", className)} {...props} />;
 }
 
 export { Card, CardHeader, CardTitle, CardContent };

@@ -15,7 +15,7 @@ import {
 } from "./constants";
 import { MinRatingSelector } from "./MinRatingSelector";
 import { PriceRangeSlider } from "./PriceRangeSlider";
-import type { ShellTheme, WineType } from "./types";
+import type { AccentTheme, ShellTheme, WineType } from "./types";
 
 type FilterPanelProps = {
   selectedTypes: WineType[];
@@ -36,6 +36,7 @@ type FilterPanelProps = {
   subRegionOptionsFromApi: string[];
   shell: ShellTheme;
   isDark: boolean;
+  accent: AccentTheme;
 };
 
 function toggleMulti<T extends string>(value: T, current: T[], setter: (next: T[]) => void) {
@@ -61,6 +62,7 @@ export function FilterPanel({
   subRegionOptionsFromApi,
   shell,
   isDark,
+  accent,
 }: FilterPanelProps) {
   const varietalOptions = useMemo(() => {
     const sourceTypes = selectedTypes.length > 0 ? selectedTypes : WINE_TYPE_OPTIONS;
@@ -100,15 +102,18 @@ export function FilterPanel({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {hasActiveFilters ? (
         <button
           type="button"
           onClick={clearAll}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all hover:scale-[1.01] active:scale-95",
-            isDark ? "border-zinc-600 bg-zinc-800/50 text-zinc-300 hover:border-zinc-400" : "border-zinc-300 bg-zinc-100 text-zinc-600 hover:border-zinc-500",
+            "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-normal transition-all duration-200 active:scale-95",
+            isDark
+              ? "border-stone-700/40 text-stone-500 hover:text-stone-300"
+              : "border-stone-200 text-stone-400 hover:text-stone-600",
           )}
+          style={{ transitionTimingFunction: "var(--spring)" }}
         >
           <RotateCcw className="h-3 w-3" />
           Clear all filters
@@ -121,6 +126,7 @@ export function FilterPanel({
         selectedValues={selectedTypes}
         onToggle={(value) => toggleMulti(value as WineType, selectedTypes, onTypesChange)}
         isDark={isDark}
+        accent={accent}
         initialVisibleCount={5}
       />
       <ChipGroup
@@ -129,6 +135,7 @@ export function FilterPanel({
         selectedValues={selectedVarietals}
         onToggle={(value) => toggleMulti(value, selectedVarietals, onVarietalsChange)}
         isDark={isDark}
+        accent={accent}
         initialVisibleCount={6}
       />
       <ChipGroup
@@ -137,6 +144,7 @@ export function FilterPanel({
         selectedValues={selectedCountries}
         onToggle={(value) => toggleMulti(value, selectedCountries, onCountriesChange)}
         isDark={isDark}
+        accent={accent}
         initialVisibleCount={6}
       />
       <ChipGroup
@@ -145,6 +153,7 @@ export function FilterPanel({
         selectedValues={selectedSubRegions}
         onToggle={(value) => toggleMulti(value, selectedSubRegions, onSubRegionsChange)}
         isDark={isDark}
+        accent={accent}
         initialVisibleCount={6}
       />
 
@@ -155,6 +164,7 @@ export function FilterPanel({
         onMaxChange={onMaxPriceChange}
         shell={shell}
         isDark={isDark}
+        accent={accent}
       />
 
       <MinRatingSelector
@@ -162,6 +172,7 @@ export function FilterPanel({
         onChange={onMinRatingChange}
         shell={shell}
         isDark={isDark}
+        accent={accent}
       />
     </div>
   );

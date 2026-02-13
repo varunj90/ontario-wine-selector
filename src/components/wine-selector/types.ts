@@ -34,6 +34,32 @@ export type AlternativeStoreOption = StoreOption & {
   availableCount: number;
 };
 
+/** Accent colors that shift based on the selected wine type. */
+export type AccentTheme = {
+  /** Vivino rating box background (e.g. "bg-amber-500/10") */
+  glow: string;
+  /** Vivino rating box border (e.g. "border-amber-500/30") */
+  glowBorder: string;
+  /** Rating label color */
+  glowText: string;
+  /** Star fill color */
+  starFill: string;
+  /** Selected chip treatment */
+  chipActive: string;
+  /** Selected chip treatment (light mode) */
+  chipActiveLight: string;
+  /** Price slider active track */
+  sliderTrack: string;
+  /** Price slider active track (light mode) */
+  sliderTrackLight: string;
+  /** Rank badge background */
+  rankBg: string;
+  /** Subtle page gradient tint color (hex) for dark mode */
+  pageGradientTint: string;
+  /** Whether to show bubbly decoration */
+  hasBubbles?: boolean;
+};
+
 export type ShellTheme = {
   page: string;
   card: string;

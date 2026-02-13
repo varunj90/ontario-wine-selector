@@ -12,12 +12,12 @@ import {
   FavoritesPanel,
   FilterPanel,
   RecommendationList,
-  SearchInput,
   SelectedStoreInfo,
   StoreFallbackNote,
   StoreSelector,
   darkTheme,
   lightTheme,
+  getAccentForTypes,
   trackEvent,
   useAlternativeStores,
   useFavorites,
@@ -33,7 +33,7 @@ function WineSelectorApp() {
   const shell = isDark ? darkTheme : lightTheme;
 
   // Filter state
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchTerm = ""; // search UI removed for now
   const [postalCode, setPostalCode] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<WineType[]>([]);
   const [selectedVarietals, setSelectedVarietals] = useState<string[]>([]);
@@ -44,12 +44,14 @@ function WineSelectorApp() {
   const [minRating, setMinRating] = useState(4.0);
   const [selectedStoreId, setSelectedStoreId] = useState("");
 
-  // Presentation state (not coupled to data fetching)
+  // Adaptive accent
+  const accent = useMemo(() => getAccentForTypes(selectedTypes), [selectedTypes]);
+
+  // Presentation state
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [selectedWineId, setSelectedWineId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(5);
 
-  // Reset presentation state when new results arrive
   const handleResults = useCallback((firstId: string | null) => {
     setExpandedCard(firstId);
     setSelectedWineId(null);
@@ -60,7 +62,6 @@ function WineSelectorApp() {
   const { stores, loading: storeLookupLoading, error: storeLookupError } = useStoreLookup(postalCode);
   const { favoriteIds, toggleFavorite, isFavorited } = useFavorites();
 
-  // Derive the effective store ID: if the selected store is no longer in the list, treat as cleared
   const effectiveStoreId = useMemo(() => {
     if (!selectedStoreId) return "";
     return stores.some((store) => store.id === selectedStoreId) ? selectedStoreId : "";
@@ -101,7 +102,7 @@ function WineSelectorApp() {
     minRating,
   });
 
-  // Derived state
+  // Derived
   const selectedStore = stores.find((store) => store.id === effectiveStoreId);
   const selectedWine = useMemo(
     () => recommendations.find((wine) => wine.id === selectedWineId) ?? null,
@@ -117,36 +118,72 @@ function WineSelectorApp() {
     void fetchRecommendations();
   };
 
+  // Rich background — inline style so the gradient actually renders
+  const tint = accent.pageGradientTint;
+  const pageBackground = isDark
+    ? `radial-gradient(ellipse 80% 50% at 15% -5%, ${tint} 0%, transparent 50%), radial-gradient(ellipse 60% 40% at 85% 110%, ${tint}44 0%, transparent 50%), linear-gradient(to bottom, #0c0a09 0%, #0c0a09 100%)`
+    : undefined;
+
   return (
-    <div className={cn("min-h-screen transition-colors duration-500", shell.page)}>
-      <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 pb-28 pt-6">
-        {/* Search and filters card */}
-        <Card className={cn("animate-fade-up shadow-sm backdrop-blur-xl transition-all duration-300", shell.card)}>
-          <CardHeader className="space-y-2">
+    <div
+      className={cn(
+        "relative min-h-screen transition-colors duration-700",
+        !isDark && "bg-[#faf8f5] text-stone-900",
+        isDark && "text-stone-100",
+      )}
+      style={isDark ? { background: pageBackground } : undefined}
+    >
+      <main className="relative z-[1] mx-auto flex w-full max-w-md flex-col gap-7 px-4 pb-36 pt-8">
+        {/* ─── Search & Filters Card ─── */}
+        <Card
+          className={cn(
+            "animate-fade-up transition-all duration-500",
+            isDark
+              ? "border-stone-700/30 bg-stone-900/60"
+              : "glass-card-light border-stone-200/70 bg-white/75",
+          )}
+        >
+          <CardHeader className="space-y-4 p-6 pb-3">
             <div className="flex items-center justify-between">
-              <Badge className={cn("w-fit uppercase tracking-[0.22em]", shell.badge)}>Premium quick pick</Badge>
+              <Badge className={cn(
+                "w-fit text-[10px] uppercase tracking-[0.25em] font-medium",
+                isDark
+                  ? "border-stone-600/40 bg-stone-800/50 text-stone-400"
+                  : "border-stone-300/60 bg-stone-100 text-stone-500",
+              )}>
+                Premium quick pick
+              </Badge>
               <button
                 type="button"
                 onClick={toggleTheme}
                 className={cn(
-                  "inline-flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-200 hover:scale-[1.03] active:scale-95",
-                  shell.input,
+                  "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-300 hover:scale-105 active:scale-95",
+                  isDark
+                    ? "border-stone-700/40 bg-stone-800/40 text-stone-400 hover:text-stone-200"
+                    : "border-stone-200 bg-white text-stone-500 hover:text-stone-700",
                 )}
+                style={{ transitionTimingFunction: "var(--spring)" }}
                 aria-label="Toggle theme"
               >
-                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {isDark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
               </button>
             </div>
-            <CardTitle className={cn("text-[28px] leading-[1.12] transition-colors", isDark ? "text-zinc-50" : "text-zinc-900")}>
+
+            <CardTitle
+              className={cn(
+                "text-[26px] font-semibold leading-[1.2] tracking-[-0.02em]",
+                isDark ? "text-[#f5f0eb]" : "text-stone-900",
+              )}
+            >
               Search top-rated wine near your LCBO
             </CardTitle>
-            <p className={cn("text-sm transition-colors", shell.textMuted)}>
-              Find a bottle you are excited about. We always prioritize highly rated wines and show what is nearby.
+
+            <p className={cn("text-[14px] leading-[1.7]", isDark ? "text-stone-400" : "text-stone-500")}>
+              Find a bottle you&apos;re excited about. We prioritize highly rated wines that are nearby and in stock.
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <SearchInput value={searchTerm} onChange={setSearchTerm} shell={shell} />
 
+          <CardContent className="space-y-4 p-6 pt-1">
             <StoreSelector
               postalCode={postalCode}
               onPostalCodeChange={setPostalCode}
@@ -178,20 +215,23 @@ function WineSelectorApp() {
               subRegionOptionsFromApi={subRegionOptionsFromApi}
               shell={shell}
               isDark={isDark}
+              accent={accent}
             />
 
-            <Button
+            <button
               type="button"
-              size="lg"
               onClick={handleApplyFilters}
               disabled={loading}
               className={cn(
-                "h-12 w-full rounded-xl transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]",
-                isDark ? "border border-zinc-200 bg-zinc-100 text-zinc-900 hover:bg-white" : "border border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800",
+                "flex h-[52px] w-full items-center justify-center rounded-2xl text-[15px] font-semibold tracking-[-0.01em] transition-all duration-300 disabled:opacity-50",
+                isDark
+                  ? "bg-[#f5f0eb] text-stone-900 hover:bg-white active:scale-[0.98]"
+                  : "bg-stone-900 text-white hover:bg-stone-800 active:scale-[0.98]",
               )}
+              style={{ transitionTimingFunction: "var(--spring)" }}
             >
-              {loading ? "Finding great options..." : "Update picks"}
-            </Button>
+              {loading ? "Finding great options…" : "Update picks"}
+            </button>
           </CardContent>
         </Card>
 
@@ -233,6 +273,7 @@ function WineSelectorApp() {
           onSelectAlternativeStore={setSelectedStoreId}
           shell={shell}
           isDark={isDark}
+          accent={accent}
         />
       </main>
 
