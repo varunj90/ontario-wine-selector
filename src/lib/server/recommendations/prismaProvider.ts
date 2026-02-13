@@ -3,22 +3,12 @@ import { prisma } from "@/lib/server/db";
 import { getLiveStoreInventory } from "./liveLcboStoreInventory";
 import type { WineCatalogProvider } from "./providers";
 import type { RecommendationFilterInput, RecommendationWine } from "./types";
+import { isTrustedVivinoSignal, resolveVivinoUrl } from "./vivinoTrust";
 
 const MIN_TRUSTED_VIVINO_CONFIDENCE = Number(process.env.VIVINO_MIN_CONFIDENCE ?? "0.72");
 
 function fallbackLcboUrl(wineName: string, producer: string) {
   return `https://www.lcbo.com/en/catalogsearch/result/?q=${encodeURIComponent(`"${wineName} ${producer}"`)}`;
-}
-
-function fallbackVivinoUrl(wineName: string, producer: string, country: string) {
-  return `https://www.vivino.com/search/wines?q=${encodeURIComponent(`${producer} ${wineName} ${country}`)}`;
-}
-
-function resolveVivinoUrl(storedVivinoUrl: string | null, wineName: string, producer: string, country: string) {
-  if (storedVivinoUrl && /\/w\/|\/wines\//.test(storedVivinoUrl)) {
-    return storedVivinoUrl;
-  }
-  return fallbackVivinoUrl(wineName, producer, country);
 }
 
 export class PrismaWineCatalogProvider implements WineCatalogProvider {
@@ -43,7 +33,7 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
     const candidates = wines.flatMap<RecommendationWine>((wine) => {
         const signal = wine.qualitySignals[0];
         const signalConfidence = signal?.confidenceScore ?? 0;
-        const hasTrustedVivinoMatch = Boolean(signal) && signalConfidence >= MIN_TRUSTED_VIVINO_CONFIDENCE;
+        const hasTrustedVivinoMatch = Boolean(signal) && isTrustedVivinoSignal(signalConfidence, MIN_TRUSTED_VIVINO_CONFIDENCE);
         const matchedRating = hasTrustedVivinoMatch ? (signal?.rating ?? 0) : 0;
         const matchedRatingCount = hasTrustedVivinoMatch ? (signal?.ratingCount ?? 0) : 0;
         const preferredMarket = filters.storeId
