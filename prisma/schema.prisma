@@ -40,6 +40,12 @@ model Wine {
 
   @@index([name])
   @@index([type, varietal, country, subRegion])
+  // TODO(P2): varietal is mutable enrichment data and is fragile in an identity
+  // constraint — backfill/extraction changes cause P2002 collisions.  Migration
+  // plan: (1) add @@unique([name, producer, country, subRegion]) without varietal,
+  // (2) update lcboSync.ts upsert to use the new key, (3) drop the old constraint.
+  // Prefer lcboProductId as the primary identity for LCBO-sourced rows (already
+  // @unique above) and use the name-based key only for non-LCBO rows.
   @@unique([name, producer, varietal, country, subRegion], map: "wine_identity_unique")
 }
 

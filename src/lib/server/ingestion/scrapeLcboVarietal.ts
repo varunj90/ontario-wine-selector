@@ -17,6 +17,78 @@ const LABEL_VALUE_RE =
 /** In-memory cache to avoid redundant scrapes within a process lifetime. */
 const varietalCache = new Map<string, string | null>();
 
+// ── Observability counters ────────────────────────────────────────────────
+export type ScrapeStats = {
+  attempted: number;
+  success: number;
+  nullResult: number;
+  errors: number;
+  skipped: number;
+  /** First N failed URLs for quick debugging. */
+  sampleFailedUrls: string[];
+};
+
+const MAX_FAILED_SAMPLES = 10;
+
+const stats: ScrapeStats = {
+  attempted: 0,
+  success: 0,
+  nullResult: 0,
+  errors: 0,
+  skipped: 0,
+  sampleFailedUrls: [],
+};
+
+/** Returns a snapshot of the current scrape statistics. */
+export function getScrapeStats(): Readonly<ScrapeStats> {
+  return { ...stats, sampleFailedUrls: [...stats.sampleFailedUrls] };
+}
+
+/** Resets all counters (useful between test runs or script restarts). */
+export function resetScrapeStats(): void {
+  stats.attempted = 0;
+  stats.success = 0;
+  stats.nullResult = 0;
+  stats.errors = 0;
+  stats.skipped = 0;
+  stats.sampleFailedUrls = [];
+}
+
+/**
+ * Returns the scrape success rate as a number between 0 and 1.
+ * Returns 1 when nothing has been attempted yet (no data = no alarm).
+ */
+export function scrapeSuccessRate(): number {
+  if (stats.attempted === 0) return 1;
+  return stats.success / stats.attempted;
+}
+
+const DEFAULT_SUCCESS_THRESHOLD = 0.7;
+
+/**
+ * Throws if the success rate drops below `threshold` (default 70%).
+ * Call after a scrape batch to halt early if LCBO's HTML changed.
+ */
+export function assertScrapeHealth(threshold = DEFAULT_SUCCESS_THRESHOLD): void {
+  const rate = scrapeSuccessRate();
+  if (stats.attempted >= 10 && rate < threshold) {
+    throw new Error(
+      `Scrape success rate ${(rate * 100).toFixed(1)}% is below threshold ${(threshold * 100).toFixed(0)}%. ` +
+        `Stats: ${JSON.stringify(getScrapeStats())}. ` +
+        `LCBO's HTML structure may have changed — check sample failed URLs.`,
+    );
+  }
+}
+
+function trackFailed(url: string): void {
+  stats.nullResult += 1;
+  if (stats.sampleFailedUrls.length < MAX_FAILED_SAMPLES) {
+    stats.sampleFailedUrls.push(url);
+  }
+}
+
+// ── Core scraper ──────────────────────────────────────────────────────────
+
 /**
  * Given an LCBO product page URL (e.g. https://www.lcbo.com/en/gato-negro-chardonnay-11928),
  * fetches the page and extracts the varietal name.
@@ -25,10 +97,15 @@ const varietalCache = new Map<string, string | null>();
  * cannot be fetched or the varietal label is not present.
  */
 export async function scrapeLcboVarietal(lcboUrl: string): Promise<string | null> {
-  if (!lcboUrl || lcboUrl.includes("catalogsearch")) return null;
+  if (!lcboUrl || lcboUrl.includes("catalogsearch")) {
+    stats.skipped += 1;
+    return null;
+  }
 
   const cached = varietalCache.get(lcboUrl);
   if (cached !== undefined) return cached;
+
+  stats.attempted += 1;
 
   try {
     const controller = new AbortController();
@@ -47,6 +124,7 @@ export async function scrapeLcboVarietal(lcboUrl: string): Promise<string | null
 
     if (!resp.ok) {
       varietalCache.set(lcboUrl, null);
+      trackFailed(lcboUrl);
       return null;
     }
 
@@ -55,9 +133,20 @@ export async function scrapeLcboVarietal(lcboUrl: string): Promise<string | null
     const varietal = match?.[1]?.trim() || null;
 
     varietalCache.set(lcboUrl, varietal);
+
+    if (varietal) {
+      stats.success += 1;
+    } else {
+      trackFailed(lcboUrl);
+    }
+
     return varietal;
   } catch {
     varietalCache.set(lcboUrl, null);
+    stats.errors += 1;
+    if (stats.sampleFailedUrls.length < MAX_FAILED_SAMPLES) {
+      stats.sampleFailedUrls.push(lcboUrl);
+    }
     return null;
   }
 }

@@ -1,27 +1,14 @@
 import type { WineType } from "./types";
 
+// Varietal chip labels and region mappings are defined in the shared domain
+// module so that the UI, extraction engine, and DB queries all agree on the
+// same canonical grape names.  Re-exported here for component convenience.
+export { VARIETAL_BY_TYPE, REGIONS_BY_VARIETAL } from "@/lib/domain/varietals";
+
 export const PRICE_MIN = 10;
 export const PRICE_MAX = 500;
 
 export const WINE_TYPE_OPTIONS: WineType[] = ["Red", "White", "Rose", "Bubbly", "Other"];
-
-export const VARIETAL_BY_TYPE: Record<WineType, string[]> = {
-  Red: ["Cabernet Sauvignon", "Pinot Noir", "Sangiovese", "Merlot", "Syrah"],
-  White: ["Chardonnay", "Sauvignon Blanc", "Riesling", "Pinot Grigio", "Chenin Blanc"],
-  Rose: ["Provence Rose", "Grenache Rose", "Sangiovese Rose"],
-  Bubbly: ["Champagne", "Prosecco", "Cava", "Cremant"],
-  Other: ["Orange Wine", "Fortified", "Natural"],
-};
-
-export const REGIONS_BY_VARIETAL: Record<string, string[]> = {
-  Chardonnay: ["Burgundy", "Napa Valley", "Sonoma", "Niagara", "Yarra Valley"],
-  "Sauvignon Blanc": ["Marlborough", "Loire Valley", "Napa Valley", "Niagara"],
-  "Cabernet Sauvignon": ["Napa Valley", "Bordeaux", "Coonawarra", "Maipo Valley"],
-  "Pinot Noir": ["Burgundy", "Willamette Valley", "Sonoma Coast", "Central Otago"],
-  Sangiovese: ["Tuscany", "Montalcino", "Chianti Classico", "Montepulciano"],
-  Riesling: ["Mosel", "Clare Valley", "Alsace", "Finger Lakes"],
-  Prosecco: ["Veneto", "Conegliano Valdobbiadene"],
-};
 
 export const MIN_RATING_OPTIONS = [
   { value: 3.5, label: "3.5+" },

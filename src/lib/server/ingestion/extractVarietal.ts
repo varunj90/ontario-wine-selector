@@ -8,110 +8,13 @@
  *
  * The function intentionally checks the **name first** (most reliable), then
  * the description, and returns "Blend" as a fallback.
+ *
+ * Grape list and canonical aliases are defined in the shared domain module
+ * `src/lib/domain/varietals.ts` — consumed by both this extraction engine
+ * and the UI chip labels so that the two never drift.
  */
 
-// ── canonical grape list (multi-word entries first within each group) ────────
-const RAW_VARIETALS: readonly string[] = [
-  // — Red (multi-word first) —
-  "Cabernet Sauvignon",
-  "Pinot Noir",
-  "Cabernet Franc",
-  "Petit Verdot",
-  "Petite Sirah",
-  "Pinot Meunier",
-  "Touriga Nacional",
-  "Nero d'Avola",
-
-  // — Red (single-word) —
-  "Merlot",
-  "Syrah",
-  "Shiraz",
-  "Sangiovese",
-  "Tempranillo",
-  "Grenache",
-  "Garnacha",
-  "Malbec",
-  "Zinfandel",
-  "Nebbiolo",
-  "Barbera",
-  "Mourvèdre",
-  "Monastrell",
-  "Carménère",
-  "Pinotage",
-  "Gamay",
-  "Primitivo",
-  "Dolcetto",
-  "Montepulciano",
-  "Aglianico",
-  "Corvina",
-  "Tannat",
-  "Bonarda",
-  "Zweigelt",
-  "Blaufränkisch",
-  "Mencía",
-
-  // — White (multi-word first) —
-  "Sauvignon Blanc",
-  "Pinot Grigio",
-  "Pinot Gris",
-  "Pinot Blanc",
-  "Chenin Blanc",
-  "Grüner Veltliner",
-  "Gruner Veltliner",
-
-  // — White (single-word) —
-  "Chardonnay",
-  "Riesling",
-  "Viognier",
-  "Gewürztraminer",
-  "Gewurztraminer",
-  "Albariño",
-  "Albarino",
-  "Torrontés",
-  "Torrontes",
-  "Muscat",
-  "Moscato",
-  "Moscatel",
-  "Sémillon",
-  "Semillon",
-  "Marsanne",
-  "Roussanne",
-  "Verdejo",
-  "Vermentino",
-  "Trebbiano",
-  "Garganega",
-  "Fiano",
-  "Falanghina",
-  "Cortese",
-  "Pecorino",
-  "Soave",
-
-  // — Sparkling designations —
-  "Prosecco",
-  "Champagne",
-  "Cava",
-  "Crémant",
-  "Cremant",
-
-  // — Other designations —
-  "Meritage",
-  "Vidal",
-  "Baco Noir",
-] as const;
-
-// Canonical-name map: maps each lowercase variant to its preferred label.
-// "pinot gris" → "Pinot Grigio", "garnacha" → "Grenache", etc.
-const CANONICAL_MAP: Record<string, string> = {
-  "pinot gris": "Pinot Grigio",
-  garnacha: "Grenache",
-  monastrell: "Mourvèdre",
-  "gruner veltliner": "Grüner Veltliner",
-  gewurztraminer: "Gewürztraminer",
-  albarino: "Albariño",
-  torrontes: "Torrontés",
-  semillon: "Sémillon",
-  cremant: "Crémant",
-};
+import { CANONICAL_MAP, RAW_VARIETALS } from "@/lib/domain/varietals";
 
 type VarietalPattern = { canonical: string; lower: string; re: RegExp };
 

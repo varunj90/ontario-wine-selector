@@ -16,7 +16,12 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 import { extractVarietal } from "../src/lib/server/ingestion/extractVarietal";
-import { scrapeLcboVarietal } from "../src/lib/server/ingestion/scrapeLcboVarietal";
+import {
+  scrapeLcboVarietal,
+  getScrapeStats,
+  resetScrapeStats,
+  assertScrapeHealth,
+} from "../src/lib/server/ingestion/scrapeLcboVarietal";
 
 const SCRAPE_DELAY_MS = 300; // rate-limit between LCBO page fetches
 const skipScrape = process.argv.includes("--skip-scrape");
@@ -142,15 +147,38 @@ async function main() {
         }
       }
 
-      // Progress reporting
+      // Progress reporting + mid-batch health check
       if ((i + 1) % 100 === 0) {
-        console.log(`  … scraped ${i + 1}/${blendWines.length} (updated: ${updatedByScrape})`);
+        const mid = getScrapeStats();
+        const midRate = mid.attempted > 0 ? ((mid.success / mid.attempted) * 100).toFixed(1) : "N/A";
+        console.log(`  … scraped ${i + 1}/${blendWines.length} (updated: ${updatedByScrape}, success rate: ${midRate}%)`);
+      }
+      if ((i + 1) % 200 === 0) {
+        try { assertScrapeHealth(); } catch (err) {
+          console.error(`\n✗ Halting: ${(err as Error).message}`);
+          break;
+        }
       }
 
       await sleep(SCRAPE_DELAY_MS);
     }
 
+    const ss = getScrapeStats();
     console.log(`\nPass 2 (scraping): Updated ${updatedByScrape}, No varietal ${scrapeNull}, Errors ${scrapeErrors}, Collisions ${scrapedCollisions}`);
+    console.log(`Scrape stats: attempted=${ss.attempted}, success=${ss.success}, null=${ss.nullResult}, errors=${ss.errors}, skipped=${ss.skipped}`);
+    const rate = ss.attempted > 0 ? ((ss.success / ss.attempted) * 100).toFixed(1) : "N/A";
+    console.log(`Scrape success rate: ${rate}%`);
+    if (ss.sampleFailedUrls.length > 0) {
+      console.log("Sample failed URLs:");
+      for (const url of ss.sampleFailedUrls) {
+        console.log(`  ${url}`);
+      }
+    }
+    try {
+      assertScrapeHealth();
+    } catch (err) {
+      console.warn(`⚠ ${(err as Error).message}`);
+    }
   }
 
   // ── Summary ────────────────────────────────────────────────────────────
