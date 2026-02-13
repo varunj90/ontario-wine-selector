@@ -79,10 +79,8 @@ export async function syncLcboCatalog(feed: unknown[]) {
         });
       } catch (error) {
         // Rare identity collision fallback keeps full sync resilient without slowing every row.
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === "P2002"
-        ) {
+        const errorCode = (error as { code?: string } | null)?.code;
+        if (errorCode === "P2002") {
           const byIdentity = await prisma.wine.findUnique({
             where: { name_producer_varietal_country_subRegion: identityWhere },
           });

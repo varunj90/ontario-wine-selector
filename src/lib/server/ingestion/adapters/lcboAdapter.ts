@@ -62,6 +62,8 @@ type CatalogItem = {
 };
 
 const DEFAULT_ENDPOINT = "https://api.lcbo.dev/graphql";
+const CATALOG_ONLY_STORE_CODE = "lcbo-catalog-only";
+const CATALOG_ONLY_STORE_LABEL = "LCBO Catalog (inventory unavailable)";
 
 function inferWineType(primaryCategory?: string | null): CatalogItem["type"] {
   const value = (primaryCategory ?? "").toLowerCase();
@@ -247,12 +249,26 @@ export async function fetchLcboFeedFromSource(): Promise<{ items: unknown[]; dea
 
       const inventories = node.inventories?.edges?.map((entry) => entry?.node).filter(Boolean) ?? [];
       if (inventories.length === 0) {
-        deadLetters.push({
-          source: "lcbo_catalog",
-          stage: "adapter",
-          reason: "No inventory records returned for product",
+        const subRegion = node.regionName?.trim() || "Unspecified";
+        const country = node.countryOfManufacture?.trim() || "Unknown";
+        const type = inferWineType(node.primaryCategory);
+        items.push({
           externalId: node.sku,
-          payload: node,
+          name: node.name.trim(),
+          producer: node.producerName?.trim() || "Unknown Producer",
+          type,
+          varietal: inferVarietal(node.shortDescription),
+          country,
+          subRegion,
+          regionLabel: `${country} - ${subRegion}`,
+          lcboUrl: toLcboUrl(node.name, node.sku),
+          vivinoUrl: `https://www.vivino.com/search/wines?q=${encodeURIComponent(node.name)}`,
+          storeCode: CATALOG_ONLY_STORE_CODE,
+          storeLabel: CATALOG_ONLY_STORE_LABEL,
+          listedPriceCents: Math.round(node.priceInCents),
+          inventoryQuantity: 0,
+          inStock: false,
+          sourceUpdatedAt: node.updatedAt ? new Date(node.updatedAt) : new Date(),
         });
         continue;
       }
