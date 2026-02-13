@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +17,8 @@ type RecommendationListProps = {
   onExpandCard: (id: string | null) => void;
   selectedWineId: string | null;
   onSelectWine: (id: string) => void;
+  visibleCount: number;
+  onShowMore: () => void;
   isFavorited: (id: string) => boolean;
   onToggleFavorite: (id: string) => void;
   onClearStore: () => void;
@@ -38,6 +38,8 @@ export function RecommendationList({
   onExpandCard,
   selectedWineId,
   onSelectWine,
+  visibleCount,
+  onShowMore,
   isFavorited,
   onToggleFavorite,
   onClearStore,
@@ -47,7 +49,6 @@ export function RecommendationList({
   shell,
   isDark,
 }: RecommendationListProps) {
-  const [visibleCount, setVisibleCount] = useState(5);
 
   return (
     <section className="space-y-3 pb-4">
@@ -142,7 +143,7 @@ export function RecommendationList({
       {recommendations.length > visibleCount ? (
         <Button
           type="button"
-          onClick={() => setVisibleCount((prev) => prev + 5)}
+          onClick={onShowMore}
           className={cn(
             "h-11 w-full rounded-xl",
             isDark ? "border border-zinc-600 bg-zinc-800 text-zinc-100 hover:bg-zinc-700" : "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100",

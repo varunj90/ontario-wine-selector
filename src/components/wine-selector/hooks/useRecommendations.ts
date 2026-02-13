@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+type OnResultsCallback = (firstId: string | null) => void;
+
 import { trackEvent } from "../analytics";
 import type { WinePick, WineType } from "../types";
 
@@ -22,11 +24,9 @@ type RecommendationsState = {
   loading: boolean;
   errorText: string | null;
   storeFallbackNote: string | null;
-  expandedCard: string | null;
-  selectedWineId: string | null;
 };
 
-export function useRecommendations(filters: RecommendationFilters) {
+export function useRecommendations(filters: RecommendationFilters, onResults?: OnResultsCallback) {
   const [state, setState] = useState<RecommendationsState>({
     recommendations: [],
     countryOptionsFromApi: [],
@@ -34,9 +34,10 @@ export function useRecommendations(filters: RecommendationFilters) {
     loading: false,
     errorText: null,
     storeFallbackNote: null,
-    expandedCard: null,
-    selectedWineId: null,
   });
+
+  const onResultsRef = useRef(onResults);
+  onResultsRef.current = onResults;
 
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
@@ -72,9 +73,8 @@ export function useRecommendations(filters: RecommendationFilters) {
         loading: false,
         errorText: null,
         storeFallbackNote: data.storeFallbackApplied ? (data.storeFallbackNote ?? "Showing nearby LCBO availability.") : null,
-        expandedCard: data.recommendations[0]?.id ?? null,
-        selectedWineId: null,
       });
+      onResultsRef.current?.(data.recommendations[0]?.id ?? null);
       trackEvent("recommendations_viewed", { count: data.recommendations.length });
     } catch {
       setState((prev) => ({
@@ -104,18 +104,8 @@ export function useRecommendations(filters: RecommendationFilters) {
     fetchRecommendations,
   ]);
 
-  const setExpandedCard = useCallback((id: string | null) => {
-    setState((prev) => ({ ...prev, expandedCard: id }));
-  }, []);
-
-  const setSelectedWineId = useCallback((id: string | null) => {
-    setState((prev) => ({ ...prev, selectedWineId: id }));
-  }, []);
-
   return {
     ...state,
-    setExpandedCard,
-    setSelectedWineId,
     fetchRecommendations,
   } as const;
 }

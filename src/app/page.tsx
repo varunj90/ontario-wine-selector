@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +44,18 @@ function WineSelectorApp() {
   const [minRating, setMinRating] = useState(4.0);
   const [selectedStoreId, setSelectedStoreId] = useState("");
 
+  // Presentation state (not coupled to data fetching)
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [selectedWineId, setSelectedWineId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(5);
+
+  // Reset presentation state when new results arrive
+  const handleResults = useCallback((firstId: string | null) => {
+    setExpandedCard(firstId);
+    setSelectedWineId(null);
+    setVisibleCount(5);
+  }, []);
+
   // Hooks
   const { stores, loading: storeLookupLoading, error: storeLookupError } = useStoreLookup(postalCode);
   const { favoriteIds, toggleFavorite, isFavorited } = useFavorites();
@@ -61,10 +73,6 @@ function WineSelectorApp() {
     loading,
     errorText,
     storeFallbackNote,
-    expandedCard,
-    setExpandedCard,
-    selectedWineId,
-    setSelectedWineId,
     fetchRecommendations,
   } = useRecommendations({
     searchTerm,
@@ -76,7 +84,7 @@ function WineSelectorApp() {
     maxPrice,
     minRating,
     selectedStoreId: effectiveStoreId,
-  });
+  }, handleResults);
 
   const { alternativeStores, alternativeLoading } = useAlternativeStores({
     selectedStoreId: effectiveStoreId,
@@ -90,6 +98,7 @@ function WineSelectorApp() {
     selectedSubRegions,
     minPrice,
     maxPrice,
+    minRating,
   });
 
   // Derived state
@@ -141,7 +150,7 @@ function WineSelectorApp() {
             <StoreSelector
               postalCode={postalCode}
               onPostalCodeChange={setPostalCode}
-              selectedStoreId={selectedStoreId}
+              selectedStoreId={effectiveStoreId}
               onStoreChange={setSelectedStoreId}
               stores={stores}
               loading={storeLookupLoading}
@@ -214,6 +223,8 @@ function WineSelectorApp() {
           onExpandCard={setExpandedCard}
           selectedWineId={selectedWineId}
           onSelectWine={setSelectedWineId}
+          visibleCount={visibleCount}
+          onShowMore={() => setVisibleCount((prev) => prev + 5)}
           isFavorited={isFavorited}
           onToggleFavorite={toggleFavorite}
           onClearStore={() => setSelectedStoreId("")}

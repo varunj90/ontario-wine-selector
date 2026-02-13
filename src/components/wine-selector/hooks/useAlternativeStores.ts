@@ -14,6 +14,7 @@ type AlternativeStoreFilters = {
   selectedSubRegions: string[];
   minPrice: number;
   maxPrice: number;
+  minRating: number;
 };
 
 export function useAlternativeStores(filters: AlternativeStoreFilters) {
@@ -47,6 +48,7 @@ export function useAlternativeStores(filters: AlternativeStoreFilters) {
       selectedSubRegions: filters.selectedSubRegions,
       minPrice: filters.minPrice,
       maxPrice: filters.maxPrice,
+      minRating: filters.minRating,
     });
 
     if (lastLookupKeyRef.current === lookupKey) return;
@@ -64,6 +66,7 @@ export function useAlternativeStores(filters: AlternativeStoreFilters) {
         subRegions: filters.selectedSubRegions.join(","),
         minPrice: String(filters.minPrice),
         maxPrice: String(filters.maxPrice),
+        minRating: String(filters.minRating),
         storeId,
       });
 
@@ -109,6 +112,7 @@ export function useAlternativeStores(filters: AlternativeStoreFilters) {
     filters.selectedSubRegions,
     filters.minPrice,
     filters.maxPrice,
+    filters.minRating,
   ]);
 
   return { alternativeStores, alternativeLoading } as const;

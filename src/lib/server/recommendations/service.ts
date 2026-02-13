@@ -106,7 +106,7 @@ export class RecommendationService {
       query: normalizedFilters,
       availableCountries,
       availableSubRegions,
-      qualityRule: "Step 1: high-confidence Vivino matches require rating >= 4.0. Step 2: unmatched wines are shown as search-only fallback.",
+      qualityRule: `Step 1: high-confidence Vivino matches require rating >= ${minRating.toFixed(1)}. Step 2: unmatched wines are shown as search-only fallback.`,
       rankingRule: "High-confidence Vivino-rated wines rank first (in-stock prioritized), then search-only fallback wines.",
       reviewCountNote: "Review counts are shown only for trusted Vivino matches; search links are provided for manual verification when confidence is lower.",
       storeFallbackApplied,
