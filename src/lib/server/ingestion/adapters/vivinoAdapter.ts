@@ -26,6 +26,9 @@ const DEFAULT_SNAPSHOT_URLS = [
   "https://raw.githubusercontent.com/Murphite/My-Vivino/main/vivino_dataset_fortified.csv",
 ];
 
+const SNAPSHOT_MIN_MATCH_SCORE = Number(process.env.VIVINO_SNAPSHOT_MIN_MATCH_SCORE ?? "0.55");
+const TRUSTED_MATCH_FLOOR = Number(process.env.VIVINO_SNAPSHOT_CONFIDENCE_FLOOR ?? "0.55");
+
 function normalize(input: string): string {
   return input
     .toLowerCase()
@@ -49,6 +52,13 @@ function scoreMatch(a: string, b: string): number {
 
   const unionSize = aTokens.size + bTokens.size - overlap;
   return unionSize > 0 ? overlap / unionSize : 0;
+}
+
+function hasProducerTokenOverlap(producer: string, brand: string): boolean {
+  const producerTokens = normalize(producer).split(" ").filter((token) => token.length > 2);
+  const brandTokens = new Set(normalize(brand).split(" ").filter((token) => token.length > 2));
+  if (producerTokens.length === 0 || brandTokens.size === 0) return false;
+  return producerTokens.some((token) => brandTokens.has(token));
 }
 
 async function fetchTextWithRetry(url: string): Promise<string> {
@@ -161,7 +171,13 @@ async function buildSignalsFromSnapshot(deadLetters: DeadLetterRecord[]) {
       }
     }
 
-    if (!best || bestScore < 0.35) {
+    if (!best) {
+      continue;
+    }
+    if (!hasProducerTokenOverlap(wine.producer, best.brand)) {
+      continue;
+    }
+    if (bestScore < SNAPSHOT_MIN_MATCH_SCORE) {
       continue;
     }
 
@@ -170,7 +186,7 @@ async function buildSignalsFromSnapshot(deadLetters: DeadLetterRecord[]) {
       source: "vivino",
       rating: Number(best.rating.toFixed(2)),
       ratingCount: best.ratingCount,
-      confidenceScore: Math.max(0.45, Math.min(0.95, bestScore)),
+      confidenceScore: Math.max(TRUSTED_MATCH_FLOOR, Math.min(0.95, bestScore)),
       fetchedAt: new Date(),
     });
   }

@@ -21,6 +21,7 @@ type WinePick = {
   rating: number;
   ratingCount: number;
   hasVivinoMatch?: boolean;
+  vivinoMatchConfidence?: number;
   matchScore: number;
   stockConfidence: "High" | "Medium";
   why: string[];
@@ -459,7 +460,7 @@ export default function Home() {
                 ))}
               </select>
             </div>
-            <p className={cn("text-xs", shell.secondaryText)}>Store filter is optional. Leave as "Any LCBO" for wider results.</p>
+            <p className={cn("text-xs", shell.secondaryText)}>Store filter is optional. Leave as &quot;Any LCBO&quot; for wider results.</p>
             {storeLookupLoading ? <p className={cn("text-xs", shell.secondaryText)}>Looking up nearby LCBO stores...</p> : null}
             {storeLookupError ? <p className={cn("text-xs text-amber-500", isDark ? "text-amber-300" : "text-amber-700")}>{storeLookupError}</p> : null}
 
@@ -674,6 +675,7 @@ export default function Home() {
             const isFavorited = favoriteIds.includes(wine.id);
             const isChosen = selectedWineId === wine.id;
             const confidencePercent = confidenceToPercent(wine.matchScore);
+            const hasDirectVivinoUrl = /\/w\/|\/wines\//.test(wine.vivinoUrl);
             return (
               <Card
                 key={wine.id}
@@ -737,7 +739,9 @@ export default function Home() {
                 <div className="flex items-center gap-2">
                   <Badge className={shell.badge}>{wine.lcboLinkType === "verified_product" ? "Verified LCBO product" : "LCBO search result"}</Badge>
                   <span className={cn("text-xs", shell.secondaryText)}>
-                    {wine.hasVivinoMatch ? "Vivino matched rating" : "Vivino search-only fallback"}
+                    {wine.hasVivinoMatch
+                      ? `Vivino high-confidence match (${Math.round((wine.vivinoMatchConfidence ?? 0) * 100)}%)`
+                      : "Vivino search-only link (no trusted bottle match)"}
                   </span>
                 </div>
 
@@ -801,7 +805,7 @@ export default function Home() {
                     isDark ? "border-zinc-600 bg-zinc-800 text-zinc-100 hover:bg-zinc-700" : "border-zinc-300 bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
                   )}
                 >
-                  View on Vivino
+                  {hasDirectVivinoUrl ? "View on Vivino" : "Search on Vivino"}
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               </Card>

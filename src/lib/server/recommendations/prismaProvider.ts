@@ -4,8 +4,21 @@ import { getLiveStoreInventory } from "./liveLcboStoreInventory";
 import type { WineCatalogProvider } from "./providers";
 import type { RecommendationFilterInput, RecommendationWine } from "./types";
 
+const MIN_TRUSTED_VIVINO_CONFIDENCE = Number(process.env.VIVINO_MIN_CONFIDENCE ?? "0.72");
+
 function fallbackLcboUrl(wineName: string, producer: string) {
   return `https://www.lcbo.com/en/catalogsearch/result/?q=${encodeURIComponent(`"${wineName} ${producer}"`)}`;
+}
+
+function fallbackVivinoUrl(wineName: string, producer: string, country: string) {
+  return `https://www.vivino.com/search/wines?q=${encodeURIComponent(`${producer} ${wineName} ${country}`)}`;
+}
+
+function resolveVivinoUrl(storedVivinoUrl: string | null, wineName: string, producer: string, country: string) {
+  if (storedVivinoUrl && /\/w\/|\/wines\//.test(storedVivinoUrl)) {
+    return storedVivinoUrl;
+  }
+  return fallbackVivinoUrl(wineName, producer, country);
 }
 
 export class PrismaWineCatalogProvider implements WineCatalogProvider {
@@ -29,9 +42,10 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
 
     const candidates = wines.flatMap<RecommendationWine>((wine) => {
         const signal = wine.qualitySignals[0];
-        const matchedRating = signal?.rating ?? 0;
-        const matchedRatingCount = signal?.ratingCount ?? 0;
         const signalConfidence = signal?.confidenceScore ?? 0;
+        const hasTrustedVivinoMatch = Boolean(signal) && signalConfidence >= MIN_TRUSTED_VIVINO_CONFIDENCE;
+        const matchedRating = hasTrustedVivinoMatch ? (signal?.rating ?? 0) : 0;
+        const matchedRatingCount = hasTrustedVivinoMatch ? (signal?.ratingCount ?? 0) : 0;
         const preferredMarket = filters.storeId
           ? wine.marketData.find((entry) => {
               const code = entry.store.lcboStoreCode ?? entry.store.id;
@@ -48,7 +62,7 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
         );
         const market = preferredMarket ?? fallbackMarket;
         if (!market && !hasLiveStoreStock) return [];
-        const hasVivinoMatch = Boolean(signal);
+        const hasVivinoMatch = hasTrustedVivinoMatch;
 
         const listedPriceCents =
           preferredMarket?.listedPriceCents ??
@@ -81,12 +95,15 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
           rating: matchedRating,
           ratingCount: matchedRatingCount,
           hasVivinoMatch,
+          vivinoMatchConfidence: signal ? signalConfidence : undefined,
           matchScore: hasVivinoMatch ? Math.max(3.5, Math.min(5, matchedRating + signalConfidence * 0.3)) : 3.3,
           stockConfidence,
           why: [
             hasVivinoMatch
-              ? `Vivino ${matchedRating.toFixed(1)} with ${matchedRatingCount} reviews`
-              : "Vivino rating is not matched yet; use the Vivino search link to verify",
+              ? `Vivino ${matchedRating.toFixed(1)} with ${matchedRatingCount} reviews (${Math.round(signalConfidence * 100)}% match confidence)`
+              : signal
+                ? `Found a possible Vivino match, but confidence (${Math.round(signalConfidence * 100)}%) is below trust threshold`
+                : "Vivino rating is not matched yet; use the Vivino search link to verify",
             stockConfidence === "High" ? "Available based on latest inventory sync" : "Inventory can change quickly by store",
             `Source refreshed ${referenceDate.toISOString().slice(0, 10)}`,
           ],
@@ -94,7 +111,7 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
           storeLabel,
           lcboUrl: wine.lcboUrl ?? fallbackLcboUrl(wine.name, wine.producer),
           lcboLinkType: wine.lcboUrl && wine.lcboUrl.includes("/en/") && !wine.lcboUrl.includes("catalogsearch") ? "verified_product" : "search_fallback",
-          vivinoUrl: wine.vivinoUrl ?? `https://www.vivino.com/search/wines?q=${encodeURIComponent(wine.name)}`,
+          vivinoUrl: resolveVivinoUrl(wine.vivinoUrl, wine.name, wine.producer, wine.country),
         } satisfies RecommendationWine];
       });
 

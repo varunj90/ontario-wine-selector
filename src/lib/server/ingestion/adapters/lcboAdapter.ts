@@ -88,6 +88,11 @@ function toLcboUrl(name: string, sku: string): string {
   return `https://www.lcbo.com/en/${slug}-${sku}`;
 }
 
+function toVivinoSearchUrl(name: string, producer: string, country?: string | null): string {
+  const query = [producer, name, country].filter(Boolean).join(" ");
+  return `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`;
+}
+
 async function fetchProductsPage(
   endpoint: string,
   afterCursor: string | null | undefined,
@@ -262,7 +267,7 @@ export async function fetchLcboFeedFromSource(): Promise<{ items: unknown[]; dea
           subRegion,
           regionLabel: `${country} - ${subRegion}`,
           lcboUrl: toLcboUrl(node.name, node.sku),
-          vivinoUrl: `https://www.vivino.com/search/wines?q=${encodeURIComponent(node.name)}`,
+          vivinoUrl: toVivinoSearchUrl(node.name, node.producerName?.trim() || "Unknown Producer", country),
           storeCode: CATALOG_ONLY_STORE_CODE,
           storeLabel: CATALOG_ONLY_STORE_LABEL,
           listedPriceCents: Math.round(node.priceInCents),
@@ -301,7 +306,7 @@ export async function fetchLcboFeedFromSource(): Promise<{ items: unknown[]; dea
           subRegion,
           regionLabel: `${country} - ${subRegion}`,
           lcboUrl: toLcboUrl(node.name, node.sku),
-          vivinoUrl: `https://www.vivino.com/search/wines?q=${encodeURIComponent(node.name)}`,
+          vivinoUrl: toVivinoSearchUrl(node.name, node.producerName?.trim() || "Unknown Producer", country),
           storeCode: store.externalId,
           storeLabel: [store.name, store.city].filter(Boolean).join(" - "),
           storeCity: store.city ?? undefined,

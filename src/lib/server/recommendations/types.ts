@@ -13,6 +13,7 @@ export type RecommendationWine = {
   rating: number;
   ratingCount: number;
   hasVivinoMatch?: boolean;
+  vivinoMatchConfidence?: number;
   matchScore: number;
   stockConfidence: "High" | "Medium";
   why: string[];
