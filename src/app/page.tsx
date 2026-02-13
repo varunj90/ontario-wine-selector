@@ -156,6 +156,7 @@ export default function Home() {
   const [storeLookupError, setStoreLookupError] = useState<string | null>(null);
   const [alternativeStores, setAlternativeStores] = useState<AlternativeStoreOption[]>([]);
   const [alternativeLoading, setAlternativeLoading] = useState(false);
+  const [storeFallbackNote, setStoreFallbackNote] = useState<string | null>(null);
   const lastAlternativeLookupKeyRef = useRef("");
 
   const varietalOptions = useMemo(() => {
@@ -335,10 +336,13 @@ export default function Home() {
         recommendations: WinePick[];
         availableCountries?: string[];
         availableSubRegions?: string[];
+        storeFallbackApplied?: boolean;
+        storeFallbackNote?: string | null;
       };
       setRecommendations(data.recommendations);
       setCountryOptionsFromApi(data.availableCountries ?? []);
       setSubRegionOptionsFromApi(data.availableSubRegions ?? []);
+      setStoreFallbackNote(data.storeFallbackApplied ? (data.storeFallbackNote ?? "Showing nearby LCBO availability.") : null);
       setExpandedCard(data.recommendations[0]?.id ?? null);
       setVisibleCount(5);
       trackEvent("recommendations_viewed", { count: data.recommendations.length });
@@ -434,7 +438,7 @@ export default function Home() {
               />
             </label>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <input
                 value={postalCode}
                 onChange={(event) => setPostalCode(event.target.value.toUpperCase())}
@@ -557,6 +561,11 @@ export default function Home() {
               </div>
               <Badge className={shell.badge}>{selectedStore.distanceKm.toFixed(1)} km</Badge>
             </CardContent>
+          </Card>
+        ) : null}
+        {storeFallbackNote ? (
+          <Card className={cn("border-amber-300 bg-amber-50", isDark && "border-amber-500/40 bg-amber-500/10")}>
+            <CardContent className={cn("pt-4 text-sm", isDark ? "text-amber-200" : "text-amber-700")}>{storeFallbackNote}</CardContent>
           </Card>
         ) : null}
 

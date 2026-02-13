@@ -54,10 +54,8 @@ export class RecommendationService {
     const availableCountries = Array.from(new Set(typeVarietalCountryPool.map((wine) => wine.country))).sort((a, b) => a.localeCompare(b));
     const availableSubRegions = Array.from(new Set(typeVarietalCountryPool.map((wine) => wine.subRegion))).sort((a, b) => a.localeCompare(b));
 
-    const filteredPool = typeVarietalCountryPool
+    const baseFilteredPool = typeVarietalCountryPool
       .filter((wine) => (normalizedFilters.subRegions.length > 0 ? normalizedFilters.subRegions.includes(wine.subRegion) : true))
-      .filter((wine) => (normalizedFilters.storeId ? wine.storeId === normalizedFilters.storeId : true))
-      .filter((wine) => (normalizedFilters.storeId ? wine.stockConfidence === "High" : true))
       .filter((wine) => wine.price >= normalizedFilters.minPrice && wine.price <= normalizedFilters.maxPrice)
       .filter((wine) => {
         if (!normalizedFilters.search) return true;
@@ -65,26 +63,42 @@ export class RecommendationService {
         return haystack.includes(normalizedFilters.search);
       });
 
-    const matchedAndRated = filteredPool
-      .filter((wine) => (wine.hasVivinoMatch ?? false) && wine.rating >= 4.0)
-      .sort((a, b) => {
-        if (a.stockConfidence !== b.stockConfidence) {
-          return a.stockConfidence === "High" ? -1 : 1;
-        }
-        if (b.rating !== a.rating) return b.rating - a.rating;
-        return b.ratingCount - a.ratingCount;
-      });
+    const rankTwoStep = (pool: RecommendationWine[]) => {
+      const matchedAndRated = pool
+        .filter((wine) => (wine.hasVivinoMatch ?? false) && wine.rating >= 4.0)
+        .sort((a, b) => {
+          if (a.stockConfidence !== b.stockConfidence) {
+            return a.stockConfidence === "High" ? -1 : 1;
+          }
+          if (b.rating !== a.rating) return b.rating - a.rating;
+          return b.ratingCount - a.ratingCount;
+        });
 
-    const searchOnlyFallback = filteredPool
-      .filter((wine) => !(wine.hasVivinoMatch ?? false))
-      .sort((a, b) => {
-        if (a.stockConfidence !== b.stockConfidence) {
-          return a.stockConfidence === "High" ? -1 : 1;
-        }
-        return a.name.localeCompare(b.name);
-      });
+      const searchOnlyFallback = pool
+        .filter((wine) => !(wine.hasVivinoMatch ?? false))
+        .sort((a, b) => {
+          if (a.stockConfidence !== b.stockConfidence) {
+            return a.stockConfidence === "High" ? -1 : 1;
+          }
+          return a.name.localeCompare(b.name);
+        });
 
-    const recommendations = [...matchedAndRated, ...searchOnlyFallback];
+      return [...matchedAndRated, ...searchOnlyFallback];
+    };
+
+    const strictStorePool = normalizedFilters.storeId
+      ? baseFilteredPool.filter((wine) => wine.storeId === normalizedFilters.storeId && wine.stockConfidence === "High")
+      : baseFilteredPool;
+
+    let storeFallbackApplied = false;
+    let storeFallbackNote: string | null = null;
+    let recommendations = rankTwoStep(strictStorePool);
+
+    if (normalizedFilters.storeId && recommendations.length === 0) {
+      storeFallbackApplied = true;
+      storeFallbackNote = "No in-stock wines matched at the selected store. Showing nearby LCBO availability instead.";
+      recommendations = rankTwoStep(baseFilteredPool.filter((wine) => wine.stockConfidence === "High"));
+    }
 
     return {
       query: normalizedFilters,
@@ -93,6 +107,8 @@ export class RecommendationService {
       qualityRule: "Step 1: matched Vivino wines require rating >= 4.0. Step 2: unmatched wines are shown as search-only fallback.",
       rankingRule: "Matched Vivino-rated wines are ranked first (in-stock prioritized), then search-only fallback wines.",
       reviewCountNote: "Review counts are shown only for matched Vivino signals; fallback wines rely on direct Vivino search verification.",
+      storeFallbackApplied,
+      storeFallbackNote,
       recommendations,
     };
   }

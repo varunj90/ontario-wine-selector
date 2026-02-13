@@ -41,5 +41,7 @@ export type RecommendationResponse = {
   qualityRule: string;
   rankingRule: string;
   reviewCountNote: string;
+  storeFallbackApplied?: boolean;
+  storeFallbackNote?: string | null;
   recommendations: RecommendationWine[];
 };
