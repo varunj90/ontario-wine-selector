@@ -2,7 +2,7 @@ import { prisma } from "@/lib/server/db";
 
 import { getLiveStoreInventory } from "./liveLcboStoreInventory";
 import type { WineCatalogProvider } from "./providers";
-import type { RecommendationFilterInput, RecommendationWine } from "./types";
+import type { RatingSource, RecommendationFilterInput, RecommendationWine } from "./types";
 import { isTrustedVivinoSignal, resolveVivinoUrl } from "./vivinoTrust";
 
 const MIN_TRUSTED_VIVINO_CONFIDENCE = Number(process.env.VIVINO_MIN_CONFIDENCE ?? "0.65");
@@ -47,12 +47,44 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
       },
     });
 
+    // ── Compute producer-level average ratings (fallback for unmatched wines) ──
+    const producerRatings = new Map<string, { sum: number; count: number }>();
+    for (const wine of wines) {
+      const sig = wine.qualitySignals[0];
+      if (!sig || !isTrustedVivinoSignal(sig.confidenceScore ?? 0, MIN_TRUSTED_VIVINO_CONFIDENCE)) continue;
+      const key = wine.producer;
+      const entry = producerRatings.get(key) ?? { sum: 0, count: 0 };
+      entry.sum += sig.rating ?? 0;
+      entry.count += 1;
+      producerRatings.set(key, entry);
+    }
+
     const candidates = wines.flatMap<RecommendationWine>((wine) => {
         const signal = wine.qualitySignals[0];
         const signalConfidence = signal?.confidenceScore ?? 0;
         const hasTrustedVivinoMatch = Boolean(signal) && isTrustedVivinoSignal(signalConfidence, MIN_TRUSTED_VIVINO_CONFIDENCE);
-        const matchedRating = hasTrustedVivinoMatch ? (signal?.rating ?? 0) : 0;
-        const matchedRatingCount = hasTrustedVivinoMatch ? (signal?.ratingCount ?? 0) : 0;
+
+        // Determine rating source: direct > producer_avg > none
+        let matchedRating: number;
+        let matchedRatingCount: number;
+        let ratingSource: RatingSource;
+
+        if (hasTrustedVivinoMatch) {
+          matchedRating = signal?.rating ?? 0;
+          matchedRatingCount = signal?.ratingCount ?? 0;
+          ratingSource = "direct";
+        } else {
+          const producerAvg = producerRatings.get(wine.producer);
+          if (producerAvg && producerAvg.count >= 1 && wine.producer !== "Unknown Producer") {
+            matchedRating = Number((producerAvg.sum / producerAvg.count).toFixed(1));
+            matchedRatingCount = 0;  // We don't have a per-wine count for averages
+            ratingSource = "producer_avg";
+          } else {
+            matchedRating = 0;
+            matchedRatingCount = 0;
+            ratingSource = "none";
+          }
+        }
         const preferredMarket = filters.storeId
           ? wine.marketData.find((entry) => {
               const code = entry.store.lcboStoreCode ?? entry.store.id;
@@ -69,7 +101,7 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
         );
         const market = preferredMarket ?? fallbackMarket;
         if (!market && !hasLiveStoreStock) return [];
-        const hasVivinoMatch = hasTrustedVivinoMatch;
+        const hasVivinoMatch = hasTrustedVivinoMatch || ratingSource === "producer_avg";
 
         const listedPriceCents =
           preferredMarket?.listedPriceCents ??
@@ -101,16 +133,23 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
           price: listedPriceCents / 100,
           rating: matchedRating,
           ratingCount: matchedRatingCount,
+          ratingSource,
           hasVivinoMatch,
           vivinoMatchConfidence: signal ? signalConfidence : undefined,
-          matchScore: hasVivinoMatch ? Math.max(3.5, Math.min(5, matchedRating + signalConfidence * 0.3)) : 3.3,
+          matchScore: ratingSource === "direct"
+            ? Math.max(3.5, Math.min(5, matchedRating + signalConfidence * 0.3))
+            : ratingSource === "producer_avg"
+              ? Math.max(3.2, Math.min(4.8, matchedRating))
+              : 3.3,
           stockConfidence,
           why: [
-            hasVivinoMatch
-              ? `Vivino ${matchedRating.toFixed(1)} with ${matchedRatingCount} reviews (${Math.round(signalConfidence * 100)}% match confidence)`
-              : signal
-                ? `Found a possible Vivino match, but confidence (${Math.round(signalConfidence * 100)}%) is below trust threshold`
-                : "Vivino rating is not matched yet; use the Vivino search link to verify",
+            ratingSource === "direct"
+              ? `Vivino ${matchedRating.toFixed(1)} with ${matchedRatingCount.toLocaleString()} reviews (${Math.round(signalConfidence * 100)}% match confidence)`
+              : ratingSource === "producer_avg"
+                ? `Producer avg ${matchedRating.toFixed(1)} from ${producerRatings.get(wine.producer)?.count ?? 0} other wines by ${wine.producer}`
+                : signal
+                  ? `Found a possible Vivino match, but confidence (${Math.round(signalConfidence * 100)}%) is below trust threshold`
+                  : "No Vivino rating yet — search on Vivino to verify",
             stockConfidence === "High" ? "Available based on latest inventory sync" : "Inventory can change quickly by store",
             `Source refreshed ${referenceDate.toISOString().slice(0, 10)}`,
           ],

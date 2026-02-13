@@ -47,6 +47,7 @@ function makeWine(overrides: Partial<RecommendationWine>): RecommendationWine {
     price: overrides.price ?? 30,
     rating: overrides.rating ?? 0,
     ratingCount: overrides.ratingCount ?? 0,
+    ratingSource: overrides.ratingSource ?? "none",
     hasVivinoMatch: overrides.hasVivinoMatch ?? false,
     vivinoMatchConfidence: overrides.vivinoMatchConfidence,
     matchScore: overrides.matchScore ?? 3.3,
@@ -60,35 +61,44 @@ function makeWine(overrides: Partial<RecommendationWine>): RecommendationWine {
   };
 }
 
-test("recommendation ranking prioritizes trusted Vivino matches and keeps search-only fallback", async () => {
+test("three-tier ranking: direct Vivino first, producer avg second, unrated last", async () => {
   const wines: RecommendationWine[] = [
     makeWine({
-      id: "trusted",
-      name: "Trusted Match",
+      id: "unrated",
+      name: "Aaa Unrated Wine",
+      ratingSource: "none",
+      hasVivinoMatch: false,
+      rating: 0,
+      ratingCount: 0,
+      storeId: "store-a",
+    }),
+    makeWine({
+      id: "producer-avg",
+      name: "Producer Avg Wine",
+      ratingSource: "producer_avg",
+      hasVivinoMatch: true,
+      rating: 4.2,
+      ratingCount: 0,
+      storeId: "store-a",
+    }),
+    makeWine({
+      id: "direct",
+      name: "Direct Match Wine",
+      ratingSource: "direct",
       hasVivinoMatch: true,
       vivinoMatchConfidence: 0.82,
       rating: 4.4,
       ratingCount: 150,
-      matchScore: 4.5,
       storeId: "store-a",
     }),
     makeWine({
-      id: "low-rated-trusted",
-      name: "Low Rated Trusted",
+      id: "low-rated-direct",
+      name: "Low Rated Direct",
+      ratingSource: "direct",
       hasVivinoMatch: true,
       vivinoMatchConfidence: 0.81,
       rating: 3.8,
       ratingCount: 180,
-      matchScore: 4.0,
-      storeId: "store-a",
-    }),
-    makeWine({
-      id: "fallback",
-      name: "Fallback Search",
-      hasVivinoMatch: false,
-      rating: 0,
-      ratingCount: 0,
-      matchScore: 3.4,
       storeId: "store-a",
     }),
   ];
@@ -99,9 +109,11 @@ test("recommendation ranking prioritizes trusted Vivino matches and keeps search
   );
 
   const result = await service.recommend(baseFilters({ storeId: "store-a" }));
+  // Direct (4.4) first, producer avg (4.2) second,
+  // low-rated direct (3.8 < minRating 4.0) and unrated in tier 3
   assert.deepEqual(
     result.recommendations.map((wine) => wine.id),
-    ["trusted", "fallback"],
+    ["direct", "producer-avg", "unrated", "low-rated-direct"],
   );
 });
 

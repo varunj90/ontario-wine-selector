@@ -104,10 +104,12 @@ export function WineCard({
           "rounded-2xl border px-3 py-2.5",
           accent.glow, accent.glowBorder,
         )}>
-          <p className={cn("text-[10px] font-medium uppercase tracking-[0.06em]", accent.glowText)}>Vivino</p>
+          <p className={cn("text-[10px] font-medium uppercase tracking-[0.06em]", accent.glowText)}>
+            {wine.ratingSource === "producer_avg" ? "Producer Avg" : "Vivino"}
+          </p>
           <p className={cn("mt-1 flex items-center gap-1 text-[16px] font-bold leading-none", isDark ? "text-[#f5f0eb]" : "text-stone-900")}>
-            <Star className={cn("h-3.5 w-3.5", wine.hasVivinoMatch ? accent.starFill : "text-stone-500")} />
-            {wine.hasVivinoMatch ? `${wine.rating.toFixed(1)}` : "—"}
+            <Star className={cn("h-3.5 w-3.5", wine.rating > 0 ? accent.starFill : "text-stone-500")} />
+            {wine.rating > 0 ? `${wine.rating.toFixed(1)}` : "—"}
           </p>
         </div>
         <div className={cn("rounded-2xl px-3 py-2.5 overflow-hidden", isDark ? "bg-stone-800/40" : "bg-stone-50")}>
@@ -118,7 +120,7 @@ export function WineCard({
           <p className={cn("text-[10px] font-medium uppercase tracking-[0.06em]", isDark ? "text-stone-500" : "text-stone-400")}>Reviews</p>
           <p className={cn("mt-1 flex items-center gap-1 text-[13px] font-semibold leading-none", isDark ? "text-stone-200" : "text-stone-700")}>
             <Sparkles className="h-3 w-3" />
-            {wine.hasVivinoMatch ? wine.ratingCount.toLocaleString() : "—"}
+            {wine.ratingSource === "direct" && wine.ratingCount > 0 ? wine.ratingCount.toLocaleString() : wine.ratingSource === "producer_avg" ? "est." : "—"}
           </p>
         </div>
       </div>
@@ -152,9 +154,11 @@ export function WineCard({
           {wine.lcboLinkType === "verified_product" ? "Verified LCBO" : "LCBO search"}
         </span>
         <span className={isDark ? "text-stone-500" : "text-stone-400"}>
-          {wine.hasVivinoMatch
+          {wine.ratingSource === "direct"
             ? `Vivino match (${Math.round((wine.vivinoMatchConfidence ?? 0) * 100)}%)`
-            : "Vivino search-only"}
+            : wine.ratingSource === "producer_avg"
+              ? "Producer avg rating"
+              : "Search on Vivino"}
         </span>
       </div>
 

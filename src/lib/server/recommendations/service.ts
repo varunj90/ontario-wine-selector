@@ -74,27 +74,37 @@ export class RecommendationService {
 
     const minRating = normalizedFilters.minRating ?? 4.0;
 
-    const rankTwoStep = (pool: RecommendationWine[]) => {
-      const matchedAndRated = pool
-        .filter((wine) => (wine.hasVivinoMatch ?? false) && wine.rating >= minRating)
-        .sort((a, b) => {
-          if (a.stockConfidence !== b.stockConfidence) {
-            return a.stockConfidence === "High" ? -1 : 1;
-          }
-          if (b.rating !== a.rating) return b.rating - a.rating;
-          return b.ratingCount - a.ratingCount;
-        });
+    // Three-tier ranking to build user trust:
+    //   Tier 1 — Direct Vivino match (highest confidence, shown first)
+    //   Tier 2 — Producer average estimate (decent signal, shown second)
+    //   Tier 3 — No rating data (search-only fallback, shown last)
+    const rankThreeTier = (pool: RecommendationWine[]) => {
+      const byStockThenRating = (a: RecommendationWine, b: RecommendationWine) => {
+        if (a.stockConfidence !== b.stockConfidence) return a.stockConfidence === "High" ? -1 : 1;
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        return b.ratingCount - a.ratingCount;
+      };
 
-      const searchOnlyFallback = pool
-        .filter((wine) => !(wine.hasVivinoMatch ?? false))
+      const tier1 = pool
+        .filter((w) => w.ratingSource === "direct" && w.rating >= minRating)
+        .sort(byStockThenRating);
+
+      const tier2 = pool
+        .filter((w) => w.ratingSource === "producer_avg" && w.rating >= minRating)
+        .sort(byStockThenRating);
+
+      const tier3 = pool
+        .filter((w) => {
+          if (w.ratingSource === "direct" && w.rating >= minRating) return false;
+          if (w.ratingSource === "producer_avg" && w.rating >= minRating) return false;
+          return true;
+        })
         .sort((a, b) => {
-          if (a.stockConfidence !== b.stockConfidence) {
-            return a.stockConfidence === "High" ? -1 : 1;
-          }
+          if (a.stockConfidence !== b.stockConfidence) return a.stockConfidence === "High" ? -1 : 1;
           return a.name.localeCompare(b.name);
         });
 
-      return [...matchedAndRated, ...searchOnlyFallback];
+      return [...tier1, ...tier2, ...tier3];
     };
 
     const strictStorePool = normalizedFilters.storeId
@@ -103,21 +113,21 @@ export class RecommendationService {
 
     let storeFallbackApplied = false;
     let storeFallbackNote: string | null = null;
-    let recommendations = rankTwoStep(strictStorePool);
+    let recommendations = rankThreeTier(strictStorePool);
 
     if (normalizedFilters.storeId && recommendations.length === 0) {
       storeFallbackApplied = true;
       storeFallbackNote = "No in-stock wines matched at the selected store. Showing nearby LCBO availability instead.";
-      recommendations = rankTwoStep(baseFilteredPool.filter((wine) => wine.stockConfidence === "High"));
+      recommendations = rankThreeTier(baseFilteredPool.filter((wine) => wine.stockConfidence === "High"));
     }
 
     return {
       query: normalizedFilters,
       availableCountries,
       availableSubRegions,
-      qualityRule: `Step 1: high-confidence Vivino matches require rating >= ${minRating.toFixed(1)}. Step 2: unmatched wines are shown as search-only fallback.`,
-      rankingRule: "High-confidence Vivino-rated wines rank first (in-stock prioritized), then search-only fallback wines.",
-      reviewCountNote: "Review counts are shown only for trusted Vivino matches; search links are provided for manual verification when confidence is lower.",
+      qualityRule: `Tier 1: direct Vivino matches (rating >= ${minRating.toFixed(1)}). Tier 2: producer-average estimates. Tier 3: search-only fallback.`,
+      rankingRule: "Direct Vivino-rated wines rank first, then producer averages, then search-only fallback. Each tier sorted by stock confidence then rating.",
+      reviewCountNote: "Review counts shown for direct Vivino matches; 'est.' for producer averages; search links for unmatched wines.",
       storeFallbackApplied,
       storeFallbackNote,
       recommendations,

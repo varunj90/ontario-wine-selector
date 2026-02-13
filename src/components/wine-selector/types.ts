@@ -10,6 +10,7 @@ export type WinePick = {
   region: string;
   rating: number;
   ratingCount: number;
+  ratingSource?: "direct" | "producer_avg" | "none";
   hasVivinoMatch?: boolean;
   vivinoMatchConfidence?: number;
   matchScore: number;

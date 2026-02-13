@@ -55,7 +55,7 @@ export function FavoritesPanel({ wines, onSelectWine, isDark }: FavoritesPanelPr
                 {wine.name}
               </p>
               <p className={cn("mt-0.5 text-[11px]", isDark ? "text-stone-500" : "text-stone-400")}>
-                {wine.hasVivinoMatch ? `Vivino ${wine.rating.toFixed(1)}` : "Vivino search"} — ${wine.price.toFixed(2)}
+                {wine.ratingSource === "direct" ? `Vivino ${wine.rating.toFixed(1)}` : wine.ratingSource === "producer_avg" ? `~${wine.rating.toFixed(1)} est.` : "Search Vivino"} — ${wine.price.toFixed(2)}
               </p>
             </button>
             <a

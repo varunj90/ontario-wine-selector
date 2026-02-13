@@ -1,5 +1,13 @@
 export type LinkType = "verified_product" | "search_fallback";
 
+/**
+ * How the rating was derived:
+ * - "direct"          – direct Vivino match (highest trust)
+ * - "producer_avg"    – averaged from other wines by the same producer
+ * - "none"            – no rating data available
+ */
+export type RatingSource = "direct" | "producer_avg" | "none";
+
 export type RecommendationWine = {
   id: string;
   name: string;
@@ -12,6 +20,7 @@ export type RecommendationWine = {
   price: number;
   rating: number;
   ratingCount: number;
+  ratingSource: RatingSource;
   hasVivinoMatch?: boolean;
   vivinoMatchConfidence?: number;
   matchScore: number;
