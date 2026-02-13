@@ -183,13 +183,16 @@ export default function Home() {
   const favoriteWines = useMemo(() => recommendations.filter((wine) => favoriteIds.includes(wine.id)), [recommendations, favoriteIds]);
 
   useEffect(() => {
-    if (!stores.some((store) => store.id === selectedStoreId)) setSelectedStoreId(stores[0]?.id ?? "");
+    if (selectedStoreId && !stores.some((store) => store.id === selectedStoreId)) {
+      setSelectedStoreId("");
+    }
   }, [selectedStoreId, stores]);
 
   useEffect(() => {
     const normalized = postalCode.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3);
     if (normalized.length < 3) {
       setStores([]);
+      setSelectedStoreId("");
       setStoreLookupError(null);
       return;
     }
@@ -431,7 +434,7 @@ export default function Home() {
               />
             </label>
 
-            <div className="grid grid-cols-[1fr_auto] gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <input
                 value={postalCode}
                 onChange={(event) => setPostalCode(event.target.value.toUpperCase())}
@@ -442,16 +445,17 @@ export default function Home() {
               <select
                 value={selectedStoreId}
                 onChange={(event) => setSelectedStoreId(event.target.value)}
-                className={cn("rounded-xl border px-3 py-2.5 text-sm outline-none transition-all", shell.input)}
+                className={cn("w-full min-w-0 rounded-xl border px-3 py-2.5 text-sm outline-none transition-all", shell.input)}
               >
                 <option value="">Any LCBO</option>
                 {stores.map((store) => (
                   <option key={store.id} value={store.id}>
-                    {store.label} ({store.distanceKm.toFixed(1)} km)
+                    {store.label.split(" - ")[0]} ({store.distanceKm.toFixed(1)} km)
                   </option>
                 ))}
               </select>
             </div>
+            <p className={cn("text-xs", shell.secondaryText)}>Store filter is optional. Leave as "Any LCBO" for wider results.</p>
             {storeLookupLoading ? <p className={cn("text-xs", shell.secondaryText)}>Looking up nearby LCBO stores...</p> : null}
             {storeLookupError ? <p className={cn("text-xs text-amber-500", isDark ? "text-amber-300" : "text-amber-700")}>{storeLookupError}</p> : null}
 
@@ -547,7 +551,9 @@ export default function Home() {
             <CardContent className="flex items-center justify-between gap-3 pt-4">
               <div className="text-sm">
                 <p className={shell.secondaryText}>Selected LCBO</p>
-                <p className={cn("font-semibold", isDark ? "text-zinc-100" : "text-zinc-900")}>{selectedStore.label}</p>
+                <p className={cn("max-w-[220px] truncate font-semibold", isDark ? "text-zinc-100" : "text-zinc-900")} title={selectedStore.label}>
+                  {selectedStore.label}
+                </p>
               </div>
               <Badge className={shell.badge}>{selectedStore.distanceKm.toFixed(1)} km</Badge>
             </CardContent>
