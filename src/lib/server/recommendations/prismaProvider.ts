@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/server/db";
 
+import { getLiveStoreInventory } from "./liveLcboStoreInventory";
 import type { WineCatalogProvider } from "./providers";
 import type { RecommendationFilterInput, RecommendationWine } from "./types";
 
@@ -9,6 +10,8 @@ function fallbackLcboUrl(wineName: string, producer: string) {
 
 export class PrismaWineCatalogProvider implements WineCatalogProvider {
   async listCandidates(filters: RecommendationFilterInput): Promise<RecommendationWine[]> {
+    const liveStoreInventory = filters.storeId ? await getLiveStoreInventory(filters.storeId) : null;
+
     const wines = await prisma.wine.findMany({
       include: {
         qualitySignals: {
@@ -21,7 +24,7 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
           orderBy: [{ sourceUpdatedAt: "desc" }],
         },
       },
-      take: 500,
+      take: 2500,
     });
 
     const candidates = wines.flatMap<RecommendationWine>((wine) => {
@@ -35,9 +38,35 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
               return code === filters.storeId;
             })
           : null;
-        const market = preferredMarket ?? wine.marketData[0];
-        if (!market) return [];
+        const fallbackMarket = wine.marketData[0];
+        const sku = wine.lcboProductId ?? "";
+        const hasLiveStoreStock = Boolean(
+          liveStoreInventory &&
+            sku &&
+            liveStoreInventory.storeCode === filters.storeId &&
+            liveStoreInventory.inStockWineSkus.has(sku),
+        );
+        const market = preferredMarket ?? fallbackMarket;
+        if (!market && !hasLiveStoreStock) return [];
         const hasVivinoMatch = Boolean(signal);
+
+        const listedPriceCents =
+          preferredMarket?.listedPriceCents ??
+          (hasLiveStoreStock ? liveStoreInventory?.priceBySku.get(sku) : undefined) ??
+          fallbackMarket?.listedPriceCents ??
+          0;
+        const stockConfidence: RecommendationWine["stockConfidence"] =
+          preferredMarket?.inStock || hasLiveStoreStock ? "High" : "Medium";
+        const storeId =
+          (hasLiveStoreStock ? filters.storeId : undefined) ??
+          market?.store.lcboStoreCode ??
+          market?.store.id ??
+          "";
+        const storeLabel =
+          (hasLiveStoreStock ? liveStoreInventory?.storeLabel : undefined) ??
+          market?.store.displayName ??
+          "LCBO store";
+        const referenceDate = signal?.fetchedAt ?? market?.sourceUpdatedAt ?? new Date();
 
         return [{
           id: wine.id,
@@ -48,21 +77,21 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
           country: wine.country,
           subRegion: wine.subRegion,
           region: wine.fullRegionLabel,
-          price: market.listedPriceCents / 100,
+          price: listedPriceCents / 100,
           rating: matchedRating,
           ratingCount: matchedRatingCount,
           hasVivinoMatch,
           matchScore: hasVivinoMatch ? Math.max(3.5, Math.min(5, matchedRating + signalConfidence * 0.3)) : 3.3,
-          stockConfidence: market.inStock ? "High" : "Medium",
+          stockConfidence,
           why: [
             hasVivinoMatch
               ? `Vivino ${matchedRating.toFixed(1)} with ${matchedRatingCount} reviews`
               : "Vivino rating is not matched yet; use the Vivino search link to verify",
-            market.inStock ? "Available based on latest inventory sync" : "Inventory can change quickly by store",
-            `Source refreshed ${(signal?.fetchedAt ?? market.sourceUpdatedAt).toISOString().slice(0, 10)}`,
+            stockConfidence === "High" ? "Available based on latest inventory sync" : "Inventory can change quickly by store",
+            `Source refreshed ${referenceDate.toISOString().slice(0, 10)}`,
           ],
-          storeId: market.store.lcboStoreCode ?? market.store.id,
-          storeLabel: market.store.displayName,
+          storeId,
+          storeLabel,
           lcboUrl: wine.lcboUrl ?? fallbackLcboUrl(wine.name, wine.producer),
           lcboLinkType: wine.lcboUrl && wine.lcboUrl.includes("/en/") && !wine.lcboUrl.includes("catalogsearch") ? "verified_product" : "search_fallback",
           vivinoUrl: wine.vivinoUrl ?? `https://www.vivino.com/search/wines?q=${encodeURIComponent(wine.name)}`,
