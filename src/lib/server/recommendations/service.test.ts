@@ -21,7 +21,6 @@ class PassThroughSignalProvider implements WineSignalProvider {
 
 function baseFilters(overrides?: Partial<RecommendationFilterInput>): RecommendationFilterInput {
   return {
-    search: "",
     types: [],
     varietals: [],
     countries: [],

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ExternalLink, Heart, MapPin, Star, Sparkles } from "lucide-react";
+import { ExternalLink, Heart, MapPin, Star, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -11,11 +11,9 @@ import type { AccentTheme, ShellTheme, WinePick } from "./types";
 type WineCardProps = {
   wine: WinePick;
   rank: number;
-  isExpanded: boolean;
   isFavorited: boolean;
   isChosen: boolean;
   selectedStoreId: string;
-  onToggleExpand: () => void;
   onToggleFavorite: () => void;
   onSelect: () => void;
   shell: ShellTheme;
@@ -27,11 +25,9 @@ type WineCardProps = {
 export function WineCard({
   wine,
   rank,
-  isExpanded,
   isFavorited,
   isChosen,
   selectedStoreId,
-  onToggleExpand,
   onToggleFavorite,
   onSelect,
   shell,
@@ -162,18 +158,8 @@ export function WineCard({
         </span>
       </div>
 
-      {/* Expand toggle + Save */}
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onToggleExpand}
-          className={cn(
-            "text-[13px] font-medium transition-all duration-300 hover:opacity-70",
-            isDark ? "text-stone-300" : "text-stone-600",
-          )}
-        >
-          {isExpanded ? "Hide details ↑" : "Why this pick →"}
-        </button>
+      {/* Save button */}
+      <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={onToggleFavorite}
@@ -188,27 +174,6 @@ export function WineCard({
           <Heart className={cn("h-3 w-3", isFavorited && "fill-current")} />
           {isFavorited ? "Saved" : "Save"}
         </button>
-      </div>
-
-      {/* Expanded reasons — CSS grid transition */}
-      <div className="expand-collapse" data-expanded={isExpanded ? "true" : "false"}>
-        <div>
-          <ul className={cn("space-y-2 pb-1 text-[13px]", isDark ? "text-stone-200" : "text-stone-600")}>
-            {wine.why.map((reason, i) => (
-              <li
-                key={reason}
-                className={cn(
-                  "flex items-start gap-2.5 rounded-xl border px-3 py-2.5",
-                  isDark ? "border-stone-700/30 bg-stone-800/20" : "border-stone-100 bg-stone-50",
-                )}
-                style={{ animationDelay: `${i * 50}ms` }}
-              >
-                <Check className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", isDark ? "text-stone-400" : "text-stone-500")} />
-                <span className="leading-relaxed">{reason}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
       </div>
 
       {/* Action buttons */}

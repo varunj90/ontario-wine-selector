@@ -12,8 +12,6 @@ type RecommendationListProps = {
   loading: boolean;
   errorText: string | null;
   selectedStoreId: string;
-  expandedCard: string | null;
-  onExpandCard: (id: string | null) => void;
   selectedWineId: string | null;
   onSelectWine: (id: string) => void;
   visibleCount: number;
@@ -34,8 +32,6 @@ export function RecommendationList({
   loading,
   errorText,
   selectedStoreId,
-  expandedCard,
-  onExpandCard,
   selectedWineId,
   onSelectWine,
   visibleCount,
@@ -173,11 +169,9 @@ export function RecommendationList({
           key={wine.id}
           wine={wine}
           rank={index + 1}
-          isExpanded={expandedCard === wine.id}
           isFavorited={isFavorited(wine.id)}
           isChosen={selectedWineId === wine.id}
           selectedStoreId={selectedStoreId}
-          onToggleExpand={() => onExpandCard(expandedCard === wine.id ? null : wine.id)}
           onToggleFavorite={() => onToggleFavorite(wine.id)}
           onSelect={() => onSelectWine(wine.id)}
           shell={shell}

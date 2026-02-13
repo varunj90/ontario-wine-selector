@@ -6,7 +6,6 @@ import { trackEvent } from "../analytics";
 import type { WinePick, WineType } from "../types";
 
 type RecommendationFilters = {
-  searchTerm: string;
   selectedTypes: WineType[];
   selectedVarietals: string[];
   selectedCountries: string[];
@@ -47,7 +46,6 @@ export function useRecommendations(filters: RecommendationFilters, onResults?: O
     setState((prev) => ({ ...prev, loading: true, errorText: null }));
     try {
       const params = new URLSearchParams({
-        search: f.searchTerm,
         types: f.selectedTypes.join(","),
         varietals: f.selectedVarietals.join(","),
         countries: f.selectedCountries.join(","),
@@ -92,7 +90,6 @@ export function useRecommendations(filters: RecommendationFilters, onResults?: O
     }, 250);
     return () => clearTimeout(timeout);
   }, [
-    filters.searchTerm,
     filters.selectedTypes,
     filters.selectedVarietals,
     filters.selectedCountries,

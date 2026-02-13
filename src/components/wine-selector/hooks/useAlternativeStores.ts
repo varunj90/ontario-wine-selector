@@ -7,7 +7,6 @@ type AlternativeStoreFilters = {
   stores: StoreOption[];
   loading: boolean;
   recommendationCount: number;
-  searchTerm: string;
   selectedTypes: WineType[];
   selectedVarietals: string[];
   selectedCountries: string[];
@@ -41,7 +40,6 @@ export function useAlternativeStores(filters: AlternativeStoreFilters) {
     const lookupKey = JSON.stringify({
       selectedStoreId: filters.selectedStoreId,
       lookupCandidates: lookupCandidates.map((store) => store.id),
-      searchTerm: filters.searchTerm,
       selectedTypes: filters.selectedTypes,
       selectedVarietals: filters.selectedVarietals,
       selectedCountries: filters.selectedCountries,
@@ -59,7 +57,6 @@ export function useAlternativeStores(filters: AlternativeStoreFilters) {
 
     const buildParams = (storeId: string) =>
       new URLSearchParams({
-        search: filters.searchTerm,
         types: filters.selectedTypes.join(","),
         varietals: filters.selectedVarietals.join(","),
         countries: filters.selectedCountries.join(","),
@@ -105,7 +102,6 @@ export function useAlternativeStores(filters: AlternativeStoreFilters) {
     filters.stores,
     filters.loading,
     filters.recommendationCount,
-    filters.searchTerm,
     filters.selectedTypes,
     filters.selectedVarietals,
     filters.selectedCountries,

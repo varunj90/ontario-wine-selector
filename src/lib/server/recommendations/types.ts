@@ -34,7 +34,6 @@ export type RecommendationWine = {
 };
 
 export type RecommendationFilterInput = {
-  search: string;
   types: string[];
   varietals: string[];
   countries: string[];

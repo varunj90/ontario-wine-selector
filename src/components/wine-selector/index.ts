@@ -6,7 +6,6 @@ export { FilterPanel } from "./FilterPanel";
 export { MinRatingSelector } from "./MinRatingSelector";
 export { PriceRangeSlider } from "./PriceRangeSlider";
 export { RecommendationList } from "./RecommendationList";
-export { SearchInput } from "./SearchInput";
 export { SelectedStoreInfo } from "./SelectedStoreInfo";
 export { StoreFallbackNote } from "./StoreFallbackNote";
 export { StoreSelector } from "./StoreSelector";

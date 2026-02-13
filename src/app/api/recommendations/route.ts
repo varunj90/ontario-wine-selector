@@ -24,7 +24,6 @@ export async function GET(request: Request) {
   const minRating = clampNumber(searchParams.get("minRating"), 4.0, 0, 5);
 
   const filters: RecommendationFilterInput = {
-    search: searchParams.get("search") ?? "",
     types: parseCommaSeparated(searchParams.get("types")),
     varietals: parseCommaSeparated(searchParams.get("varietals")),
     countries: parseCommaSeparated(searchParams.get("countries")),

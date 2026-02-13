@@ -12,7 +12,6 @@ import {
   FavoritesPanel,
   FilterPanel,
   RecommendationList,
-  SearchInput,
   SelectedStoreInfo,
   StoreFallbackNote,
   StoreSelector,
@@ -34,7 +33,6 @@ function WineSelectorApp() {
   const shell = isDark ? darkTheme : lightTheme;
 
   // Filter state
-  const [searchTerm, setSearchTerm] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<WineType[]>([]);
   const [selectedVarietals, setSelectedVarietals] = useState<string[]>([]);
@@ -49,12 +47,10 @@ function WineSelectorApp() {
   const accent = useMemo(() => getAccentForTypes(selectedTypes), [selectedTypes]);
 
   // Presentation state
-  const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [selectedWineId, setSelectedWineId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(5);
 
-  const handleResults = useCallback((firstId: string | null) => {
-    setExpandedCard(firstId);
+  const handleResults = useCallback((_firstId: string | null) => {
     setSelectedWineId(null);
     setVisibleCount(5);
   }, []);
@@ -77,7 +73,6 @@ function WineSelectorApp() {
     storeFallbackNote,
     fetchRecommendations,
   } = useRecommendations({
-    searchTerm,
     selectedTypes,
     selectedVarietals,
     selectedCountries,
@@ -93,7 +88,6 @@ function WineSelectorApp() {
     stores,
     loading,
     recommendationCount: recommendations.length,
-    searchTerm,
     selectedTypes,
     selectedVarietals,
     selectedCountries,
@@ -115,7 +109,7 @@ function WineSelectorApp() {
   );
 
   const handleApplyFilters = () => {
-    trackEvent("intent_submitted", { searchLength: searchTerm.length, minPrice, maxPrice });
+    trackEvent("intent_submitted", { minPrice, maxPrice });
     void fetchRecommendations();
   };
 
@@ -185,8 +179,6 @@ function WineSelectorApp() {
           </CardHeader>
 
           <CardContent className="space-y-4 p-6 pt-1">
-            <SearchInput value={searchTerm} onChange={setSearchTerm} shell={shell} isDark={isDark} />
-
             <StoreSelector
               postalCode={postalCode}
               onPostalCodeChange={setPostalCode}
@@ -262,8 +254,6 @@ function WineSelectorApp() {
           loading={loading}
           errorText={errorText}
           selectedStoreId={effectiveStoreId}
-          expandedCard={expandedCard}
-          onExpandCard={setExpandedCard}
           selectedWineId={selectedWineId}
           onSelectWine={setSelectedWineId}
           visibleCount={visibleCount}

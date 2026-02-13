@@ -33,7 +33,6 @@ export class RecommendationService {
   async recommend(rawFilters: RecommendationFilterInput): Promise<RecommendationResponse> {
     const normalizedFilters: RecommendationFilterInput = {
       ...rawFilters,
-      search: rawFilters.search.toLowerCase().trim(),
     };
 
     let candidates: RecommendationWine[];
@@ -65,12 +64,7 @@ export class RecommendationService {
 
     const baseFilteredPool = typeVarietalCountryPool
       .filter((wine) => (normalizedFilters.subRegions.length > 0 ? normalizedFilters.subRegions.includes(wine.subRegion) : true))
-      .filter((wine) => wine.price >= normalizedFilters.minPrice && wine.price <= normalizedFilters.maxPrice)
-      .filter((wine) => {
-        if (!normalizedFilters.search) return true;
-        const haystack = `${wine.name} ${wine.producer} ${wine.varietal} ${wine.region}`.toLowerCase();
-        return haystack.includes(normalizedFilters.search);
-      });
+      .filter((wine) => wine.price >= normalizedFilters.minPrice && wine.price <= normalizedFilters.maxPrice);
 
     const minRating = normalizedFilters.minRating ?? 4.0;
 
