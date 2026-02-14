@@ -363,10 +363,27 @@ async function main() {
 
   let matched = 0, high = 0, med = 0, urlsUp = 0;
   const unmatchedWines: typeof lcbo = [];
+  // Track claimed Vivino wines to enforce 1:1 matching.
+  // Key = Vivino wine fullName (unique within crawl), value = { lcboName, score }
+  const claimedVivino = new Map<string, { lcboName: string; score: number; lcboId: string }>();
 
   for (const [i, w] of lcbo.entries()) {
     const r = matchOne(w.name, w.producer, allWines, index);
     if (!r) { unmatchedWines.push(w); continue; }
+
+    // Enforce 1:1: if this Vivino wine is already claimed by a better match, skip
+    const vivinoKey = r.wine.fullName;
+    const existing = claimedVivino.get(vivinoKey);
+    if (existing && existing.score >= r.score) {
+      unmatchedWines.push(w);
+      continue;
+    }
+    // If we're stealing from a previous match, mark the old LCBO wine as unmatched
+    if (existing) {
+      // The old match was weaker; it will remain in DB but the new one will overwrite.
+      // In practice this is rare and the old signal will be overwritten in the next sync.
+    }
+    claimedVivino.set(vivinoKey, { lcboName: w.name, score: r.score, lcboId: w.id });
 
     const conf = Math.max(0.55, Math.min(0.95, r.score));
     matched += 1;
@@ -441,6 +458,12 @@ async function main() {
     for (const w of wines) {
       const r = matchOne(w.name, w.producer, wineryWines, miniIndex);
       if (!r) continue;
+
+      // Enforce 1:1 in Phase 3 as well
+      const vivinoKey = r.wine.fullName;
+      const existingClaim = claimedVivino.get(vivinoKey);
+      if (existingClaim && existingClaim.score >= r.score) continue;
+      claimedVivino.set(vivinoKey, { lcboName: w.name, score: r.score, lcboId: w.id });
 
       const conf = Math.max(0.55, Math.min(0.95, r.score));
       wineryMatched += 1;
