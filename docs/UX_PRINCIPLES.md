@@ -19,7 +19,7 @@ The product succeeds only if a user can pick a nearby in-stock wine quickly, wit
    - Every recommendation shows:
      - Match confidence
      - In-stock confidence
-     - Why this pick in plain language
+     - Clear source/quality cues (Vivino + availability badges)
 
 4. **One-thumb mobile-first design**
    - Large tap targets, bottom-sheet interactions, quick chips.
@@ -31,13 +31,13 @@ The product succeeds only if a user can pick a nearby in-stock wine quickly, wit
 
 6. **Clarity over cleverness**
    - Recommendation logic can be simple in v1.
-   - Explanation and confidence communication must be excellent.
+   - Confidence communication must be excellent.
 
 ## Core interaction patterns
 
 - Fast chips for mood and budget.
-- Top-3 card stack with immediate reasons.
-- Expandable "Why this pick" panel.
+- Top recommendations with direct action to LCBO/Vivino.
+- No expandable "Why this pick" panel in MVP.
 - "Safe" vs "Try new" slider for novelty preference.
 - Optional "Surprise me" only after confidence baseline is met.
 
@@ -45,7 +45,7 @@ The product succeeds only if a user can pick a nearby in-stock wine quickly, wit
 
 - Clear, human, and direct.
 - No wine jargon without plain-language translation.
-- Avoid generic confidence labels; always explain confidence source.
+- Avoid generic confidence labels; always show confidence source cues.
 
 ---
 
@@ -99,7 +99,7 @@ Inspired by Josh Puckett's "Interface Craft" philosophy: _design with uncommon c
 | **BottomBar** | Morphing pill (empty → selected), glass blur, spring animation between states |
 | **PriceRangeSlider** | Borderless (seamless), accent-colored active track, custom thumb with hover/grab states |
 | **StoreSelector** | Two-column grid (postal code + dropdown), 44px height inputs |
-| **SearchInput** | As-you-type search by wine name, producer, or grape. 14px body font, 48px height, rounded-2xl |
+| **SearchInput** | Deferred for MVP until behavior/performance are validated end-to-end |
 
 ### What we intentionally avoided
 
@@ -118,5 +118,5 @@ Ship only when all are true:
 - Median decision time <= 90 seconds.
 - Recommendation acceptance >= 35% in alpha cohort.
 - Inventory validity >= 90% for surfaced picks.
-- Test users understand "Why this pick" within 5 seconds.
+- Test users understand rating + stock confidence cues within 5 seconds.
 - Core flow has zero dead-end states.

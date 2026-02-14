@@ -2,7 +2,7 @@
 
 ## Bottom line
 
-Build a mobile-first decision engine that helps users choose an in-stock wine near them in under 90 seconds, with clear confidence and "why this pick" explanations.
+Build a mobile-first decision engine that helps users choose an in-stock wine near them in under 90 seconds, with clear confidence and direct action links.
 
 ## What this repo is for
 

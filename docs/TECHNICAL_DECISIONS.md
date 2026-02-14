@@ -52,6 +52,8 @@ Adapter reference: `src/lib/server/ingestion/adapters/vivinoAdapter.ts`
    - then search-only fallback
 4. Selected-store strict filtering requires in-stock confidence.
 5. If strict selected-store results are empty, fallback to wider nearby in-stock results with an explicit note.
+6. MVP recommendation API does not currently include free-text `search` filtering.
+7. MVP UI does not currently render expandable "Why this pick" explanation sections.
 
 Service reference: `src/lib/server/recommendations/service.ts`
 

@@ -17,13 +17,13 @@ Help a user pick a wine they can buy near them now, quickly and confidently, on 
 
 ## Primary user story
 
-"I know roughly what I want (or I can search by name), and I want a good bottle available at a nearby LCBO without doing research in multiple apps."
+"I know the type of wine I want, my budget, and where I can shop, and I want a good bottle available at a nearby LCBO without doing research in multiple apps."
 
 ## Functional requirements (current)
 
-1. **As-you-type search**
-   - Search input filters by wine name, producer, varietal, and region text.
-   - Recommendations refresh automatically while typing.
+1. **Filter-first MVP (no text search)**
+   - MVP intentionally does not include free-text search.
+   - Discovery is driven by type, varietal, country, sub-region, price, rating threshold, and store.
 
 2. **Filter model**
    - Multi-select filters for:
@@ -63,13 +63,16 @@ Help a user pick a wine they can buy near them now, quickly and confidently, on 
    - Mobile-first layout with overflow-safe store labels.
    - Dark mode supported.
    - Loading and empty states must be explicit and actionable.
+   - Wine cards do not include an expandable "Why this pick" explanation panel in MVP.
 
 ## Explicit product decisions
 
 - Pairing filters are removed for MVP.
 - "Mood" taxonomy is replaced by wine type.
 - Region selection model is country + sub-region.
-- Search + quality + inventory trust is prioritized over social/community features.
+- Free-text search is deferred until a reliable, tested implementation is ready.
+- Expandable "Why this pick" explanations are removed for MVP to keep cards concise.
+- Quality + inventory trust is prioritized over social/community features.
 - App can show unmatched Vivino fallback entries, but must label them clearly.
 
 ## Non-goals for current MVP
@@ -78,6 +81,8 @@ Help a user pick a wine they can buy near them now, quickly and confidently, on 
 - Full user account/auth journey.
 - Personalized long-term taste graph.
 - Deep analytics dashboard for end users.
+- Text-search UX and query semantics (deferred; tracked as post-MVP enhancement).
+- Rich recommendation explanation modules ("Why this pick" expansion; deferred).
 
 ## Open product risks to monitor
 
