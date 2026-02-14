@@ -3,7 +3,7 @@ import { prisma } from "@/lib/server/db";
 import { getLiveStoreInventory } from "./liveLcboStoreInventory";
 import type { WineCatalogProvider } from "./providers";
 import type { RatingSource, RecommendationFilterInput, RecommendationWine } from "./types";
-import { isTrustedVivinoSignal, resolveVivinoUrl } from "./vivinoTrust";
+import { isDirectVivinoWineUrl, isTrustedVivinoSignal, resolveVivinoUrl } from "./vivinoTrust";
 
 const MIN_TRUSTED_VIVINO_CONFIDENCE = Number(process.env.VIVINO_MIN_CONFIDENCE ?? "0.65");
 const MIN_PRODUCER_AVG_SAMPLE_SIZE = Number(process.env.PRODUCER_AVG_MIN_SAMPLE_SIZE ?? "3");
@@ -78,6 +78,7 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
     for (const wine of wines) {
       const sig = wine.qualitySignals[0];
       if (!sig || !isTrustedVivinoSignal(sig.confidenceScore ?? 0, MIN_TRUSTED_VIVINO_CONFIDENCE)) continue;
+      if (!isDirectVivinoWineUrl(wine.vivinoUrl)) continue;
       if (!isReliableProducerForAverage(wine.producer)) continue;
       const key = `${normalizeProducerLabel(wine.producer)}|${wine.type}|${wine.country}`;
       const entry = producerRatings.get(key) ?? { sum: 0, count: 0 };
@@ -89,7 +90,11 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
     const candidates = wines.flatMap<RecommendationWine>((wine) => {
         const signal = wine.qualitySignals[0];
         const signalConfidence = signal?.confidenceScore ?? 0;
-        const hasTrustedVivinoMatch = Boolean(signal) && isTrustedVivinoSignal(signalConfidence, MIN_TRUSTED_VIVINO_CONFIDENCE);
+        const hasDirectVivinoUrl = isDirectVivinoWineUrl(wine.vivinoUrl);
+        const hasTrustedVivinoMatch =
+          Boolean(signal) &&
+          hasDirectVivinoUrl &&
+          isTrustedVivinoSignal(signalConfidence, MIN_TRUSTED_VIVINO_CONFIDENCE);
 
         // Determine rating source: direct > producer_avg > none
         let matchedRating: number;
