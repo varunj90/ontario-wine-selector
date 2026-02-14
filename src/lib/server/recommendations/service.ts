@@ -88,11 +88,8 @@ export class RecommendationService {
         .sort(byStockThenRating);
 
       const tier3 = pool
-        .filter((w) => {
-          if (w.ratingSource === "direct" && w.rating >= minRating) return false;
-          if (w.ratingSource === "producer_avg" && w.rating >= minRating) return false;
-          return true;
-        })
+        // Tier 3 is strictly unrated fallback. Rated wines below threshold are excluded.
+        .filter((w) => w.ratingSource === "none")
         .sort((a, b) => {
           if (a.stockConfidence !== b.stockConfidence) return a.stockConfidence === "High" ? -1 : 1;
           return a.name.localeCompare(b.name);
@@ -119,7 +116,7 @@ export class RecommendationService {
       query: normalizedFilters,
       availableCountries,
       availableSubRegions,
-      qualityRule: `Tier 1: direct Vivino matches (rating >= ${minRating.toFixed(1)}). Tier 2: producer-average estimates. Tier 3: search-only fallback.`,
+      qualityRule: `Tier 1: direct Vivino matches (rating >= ${minRating.toFixed(1)}). Tier 2: producer-average estimates (rating >= ${minRating.toFixed(1)}). Tier 3: unrated search-only fallback.`,
       rankingRule: "Direct Vivino-rated wines rank first, then producer averages, then search-only fallback. Each tier sorted by stock confidence then rating.",
       reviewCountNote: "Review counts shown for direct Vivino matches; 'est.' for producer averages; search links for unmatched wines.",
       storeFallbackApplied,

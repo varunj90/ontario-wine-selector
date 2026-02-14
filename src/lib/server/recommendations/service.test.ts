@@ -109,10 +109,71 @@ test("three-tier ranking: direct Vivino first, producer avg second, unrated last
 
   const result = await service.recommend(baseFilters({ storeId: "store-a" }));
   // Direct (4.4) first, producer avg (4.2) second,
-  // low-rated direct (3.8 < minRating 4.0) and unrated in tier 3
+  // unrated fallback last. Rated wines below minRating are excluded.
   assert.deepEqual(
     result.recommendations.map((wine) => wine.id),
-    ["direct", "producer-avg", "unrated", "low-rated-direct"],
+    ["direct", "producer-avg", "unrated"],
+  );
+});
+
+test("minRating strictly excludes below-threshold rated wines across direct and producer-avg tiers", async () => {
+  const wines: RecommendationWine[] = [
+    makeWine({
+      id: "direct-high",
+      name: "Direct 4.7",
+      ratingSource: "direct",
+      hasVivinoMatch: true,
+      rating: 4.7,
+      ratingCount: 220,
+      storeId: "store-a",
+    }),
+    makeWine({
+      id: "direct-low",
+      name: "Direct 4.3",
+      ratingSource: "direct",
+      hasVivinoMatch: true,
+      rating: 4.3,
+      ratingCount: 180,
+      storeId: "store-a",
+    }),
+    makeWine({
+      id: "producer-high",
+      name: "Producer Avg 4.6",
+      ratingSource: "producer_avg",
+      hasVivinoMatch: true,
+      rating: 4.6,
+      ratingCount: 0,
+      storeId: "store-a",
+    }),
+    makeWine({
+      id: "producer-low",
+      name: "Producer Avg 3.9",
+      ratingSource: "producer_avg",
+      hasVivinoMatch: true,
+      rating: 3.9,
+      ratingCount: 0,
+      storeId: "store-a",
+    }),
+    makeWine({
+      id: "unrated",
+      name: "Unrated fallback",
+      ratingSource: "none",
+      hasVivinoMatch: false,
+      rating: 0,
+      ratingCount: 0,
+      storeId: "store-a",
+    }),
+  ];
+
+  const service = new RecommendationService(
+    new StaticCatalogProvider(wines),
+    new PassThroughSignalProvider(),
+  );
+
+  const result = await service.recommend(baseFilters({ storeId: "store-a", minRating: 4.5 }));
+  assert.deepEqual(
+    result.recommendations.map((wine) => wine.id),
+    ["direct-high", "producer-high", "unrated"],
   );
 });
 
