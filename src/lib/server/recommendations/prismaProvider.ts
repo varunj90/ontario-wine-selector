@@ -6,9 +6,34 @@ import type { RatingSource, RecommendationFilterInput, RecommendationWine } from
 import { isTrustedVivinoSignal, resolveVivinoUrl } from "./vivinoTrust";
 
 const MIN_TRUSTED_VIVINO_CONFIDENCE = Number(process.env.VIVINO_MIN_CONFIDENCE ?? "0.65");
+const MIN_PRODUCER_AVG_SAMPLE_SIZE = Number(process.env.PRODUCER_AVG_MIN_SAMPLE_SIZE ?? "3");
+const GENERIC_PRODUCER_LABELS = new Set([
+  "chateau",
+  "château",
+  "domaine",
+  "bodega",
+  "cantina",
+  "tenuta",
+  "maison",
+  "winery",
+  "cellars",
+  "vineyards",
+  "estate",
+]);
 
 function fallbackLcboUrl(wineName: string, producer: string) {
   return `https://www.lcbo.com/en/catalogsearch/result/?q=${encodeURIComponent(`"${wineName} ${producer}"`)}`;
+}
+
+function normalizeProducerLabel(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isReliableProducerForAverage(value: string) {
+  const normalized = normalizeProducerLabel(value);
+  if (!normalized || normalized === "unknown producer") return false;
+  if (GENERIC_PRODUCER_LABELS.has(normalized)) return false;
+  return true;
 }
 
 export class PrismaWineCatalogProvider implements WineCatalogProvider {
@@ -48,11 +73,13 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
     });
 
     // ── Compute producer-level average ratings (fallback for unmatched wines) ──
+    // Tighten trust: only compute within same producer + type + country.
     const producerRatings = new Map<string, { sum: number; count: number }>();
     for (const wine of wines) {
       const sig = wine.qualitySignals[0];
       if (!sig || !isTrustedVivinoSignal(sig.confidenceScore ?? 0, MIN_TRUSTED_VIVINO_CONFIDENCE)) continue;
-      const key = wine.producer;
+      if (!isReliableProducerForAverage(wine.producer)) continue;
+      const key = `${normalizeProducerLabel(wine.producer)}|${wine.type}|${wine.country}`;
       const entry = producerRatings.get(key) ?? { sum: 0, count: 0 };
       entry.sum += sig.rating ?? 0;
       entry.count += 1;
@@ -74,8 +101,13 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
           matchedRatingCount = signal?.ratingCount ?? 0;
           ratingSource = "direct";
         } else {
-          const producerAvg = producerRatings.get(wine.producer);
-          if (producerAvg && producerAvg.count >= 1 && wine.producer !== "Unknown Producer") {
+          const producerKey = `${normalizeProducerLabel(wine.producer)}|${wine.type}|${wine.country}`;
+          const producerAvg = producerRatings.get(producerKey);
+          if (
+            isReliableProducerForAverage(wine.producer) &&
+            producerAvg &&
+            producerAvg.count >= MIN_PRODUCER_AVG_SAMPLE_SIZE
+          ) {
             matchedRating = Number((producerAvg.sum / producerAvg.count).toFixed(1));
             matchedRatingCount = 0;  // We don't have a per-wine count for averages
             ratingSource = "producer_avg";
