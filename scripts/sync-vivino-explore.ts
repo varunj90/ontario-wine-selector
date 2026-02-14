@@ -158,10 +158,8 @@ async function fetchExplorePage(page: number): Promise<{ wines: VWine[]; winerie
     const ratingCount: number = v.statistics?.ratings_count ?? 0;
     if (rating <= 0 || ratingCount <= 0) continue;
 
-    const wSeo = winery.seo_name ?? ""; const vSeo = v.seo_name ?? "";
-    const directUrl = wSeo && vSeo
-      ? `${VIVINO_BASE}/${wSeo}/${vSeo}`
-      : `${VIVINO_BASE}/w/${w.id}`;
+    // Always use canonical /w/{id} format — slug URLs return 404
+    const directUrl = `${VIVINO_BASE}/w/${w.id}`;
 
     wines.push({
       idx: 0, wineryName, fullName, wineNameOnly, rating, ratingCount,
@@ -171,7 +169,7 @@ async function fetchExplorePage(page: number): Promise<{ wines: VWine[]; winerie
 
     if (winery.id && !seenWineries.has(winery.id)) {
       seenWineries.add(winery.id);
-      wineries.push({ id: winery.id, name: wineryName, seoName: wSeo });
+      wineries.push({ id: winery.id, name: wineryName, seoName: winery.seo_name ?? "" });
     }
   }
   return { wines, wineries, total };
@@ -201,9 +199,8 @@ async function fetchWineryWines(wineryId: number, wineryName: string, winerySeo:
     if (rating <= 0 || ratingCount < 5) continue;
 
     const fullName = `${wineryName} ${w.name}`.trim();
-    const directUrl = winerySeo && w.seo_name
-      ? `${VIVINO_BASE}/${winerySeo}/${winerySeo}-${w.seo_name}-nv`
-      : `${VIVINO_BASE}/w/${w.id}`;
+    // Always use canonical /w/{id} format — slug URLs return 404
+    const directUrl = `${VIVINO_BASE}/w/${w.id}`;
 
     wines.push({
       idx: 0, wineryName, fullName, wineNameOnly: w.name,
