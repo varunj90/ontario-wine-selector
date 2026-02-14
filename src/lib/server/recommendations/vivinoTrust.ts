@@ -12,7 +12,11 @@ export function buildVivinoSearchUrl(wineName: string, producer: string, country
 
 export function isDirectVivinoWineUrl(url?: string | null): boolean {
   if (!url) return false;
-  return /\/w\/|\/wines\//.test(url);
+  // Direct Vivino URLs use patterns like:
+  //   /w/12345  or  /wines/...  or  /{producer-slug}/{wine-slug}
+  // Search fallback URLs always contain /search/wines
+  if (url.includes("/search/wines")) return false;
+  return url.startsWith("https://www.vivino.com/");
 }
 
 export function resolveVivinoUrl(storedVivinoUrl: string | null, wineName: string, producer: string, country: string): string {

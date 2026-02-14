@@ -35,7 +35,7 @@ export function WineCard({
   accent,
   animationDelay,
 }: WineCardProps) {
-  const hasDirectVivinoUrl = /\/w\/|\/wines\//.test(wine.vivinoUrl);
+  const hasDirectVivinoUrl = wine.vivinoUrl.startsWith("https://www.vivino.com/") && !wine.vivinoUrl.includes("/search/wines");
 
   return (
     <div
@@ -101,7 +101,7 @@ export function WineCard({
           accent.glow, accent.glowBorder,
         )}>
           <p className={cn("text-[10px] font-medium uppercase tracking-[0.06em]", accent.glowText)}>
-            {wine.ratingSource === "producer_avg" ? "Producer Avg" : "Vivino"}
+            {wine.ratingSource === "direct" ? "Vivino" : wine.ratingSource === "producer_avg" ? "Producer Avg" : "Rating"}
           </p>
           <p className={cn("mt-1 flex items-center gap-1 text-[16px] font-bold leading-none", isDark ? "text-[#f5f0eb]" : "text-stone-900")}>
             <Star className={cn("h-3.5 w-3.5", wine.rating > 0 ? accent.starFill : "text-stone-500")} />
