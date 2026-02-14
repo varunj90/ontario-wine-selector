@@ -109,7 +109,7 @@ export class PrismaWineCatalogProvider implements WineCatalogProvider {
           fallbackMarket?.listedPriceCents ??
           0;
         const stockConfidence: RecommendationWine["stockConfidence"] =
-          preferredMarket?.inStock || hasLiveStoreStock ? "High" : "Medium";
+          market?.inStock || hasLiveStoreStock ? "High" : "Medium";
         const storeId =
           (hasLiveStoreStock ? filters.storeId : undefined) ??
           market?.store.lcboStoreCode ??
